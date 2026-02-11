@@ -1,0 +1,147 @@
+{
+  "kind": "implementation_plan",
+  "version": "1.0",
+  "title": "Fix call UX, add image messages, friend-request gating, and update YGLSUP branding (frontend-only)",
+  "requirements": [
+    {
+      "id": "REQ-17",
+      "summary": "Make 1:1 voice/video call initiation reliably open CallScreen, request media permissions, and show a clear recoverable in-UI error state on media failures with consistent call kind handling.",
+      "acceptanceCriteria": [
+        "From MessageThread, tapping the voice call button opens the full-screen call UI and attempts to acquire microphone access.",
+        "From MessageThread, tapping the video call button opens the full-screen call UI and attempts to acquire microphone+camera access.",
+        "If getUserMedia fails (e.g., permission denied / no device), the call UI displays an English error message and provides a way to close/end the call without leaving the app in a stuck call state.",
+        "The call kind detection (voice vs video) is consistent across MessageThread/CallProvider/CallScreen so the correct media constraints are used.",
+        "Minimize/restore and mute/unmute continue to work after this fix."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/features/chat/MessageThread.tsx",
+          "operation": "modify",
+          "description": "Ensure voice/video call initiation passes a single consistent CallKind value through the initiateCall flow, and display an English in-thread error message when call initiation fails (e.g., backend rejects or call cannot start)."
+        },
+        {
+          "path": "frontend/src/features/calls/useLocalMedia.ts",
+          "operation": "modify",
+          "description": "Harden local media acquisition: normalize getUserMedia failures into user-friendly English messages (permission denied, device not found, not supported, generic failure), ensure cleanup always runs, and avoid leaving stale streams when options change."
+        },
+        {
+          "path": "frontend/src/features/calls/CallScreen.tsx",
+          "operation": "modify",
+          "description": "Render explicit acquiring/loading UI and a clear error state when useLocalMedia reports failure; allow ending/closing the call from the error state; ensure video element attachment/cleanup remains correct so minimize/restore and mute/unmute continue to work."
+        },
+        {
+          "path": "frontend/src/features/calls/CallProvider.tsx",
+          "operation": "modify",
+          "description": "Align CallProvider state transitions with the fixed flow (e.g., ensure starting a call always un-minimizes and resets mute, ending clears all call state) and keep call kind stored/propagated as the single source of truth."
+        },
+        {
+          "path": "frontend/src/features/calls/CallChip.tsx",
+          "operation": "modify",
+          "description": "Confirm minimized call chip behavior stays consistent after the call flow changes (restore/end/mute still functional even after media acquisition errors) and adjust UI text if needed."
+        }
+      ]
+    },
+    {
+      "id": "REQ-18",
+      "summary": "Add in-chat picture sharing in 1:1 conversations with file picking, sending image messages, inline rendering, and graceful conversation previews for image messages.",
+      "acceptanceCriteria": [
+        "MessageComposer includes an image attachment control (file picker) that allows selecting common image types (e.g., PNG/JPEG/WebP).",
+        "Sending an image creates a new message that renders as an inline image bubble in MessageThread (with a sensible max width/height) and preserves existing text-message behavior.",
+        "Conversation list last-message preview gracefully handles image messages (e.g., shows a label like \"Photo\" instead of raw data).",
+        "Backend persists image messages in a way compatible with the current single-canister architecture (no external storage), and existing text messages remain readable after upgrade (include migration if required).",
+        "Users who are not participants in a conversation still cannot read/send messages (maintain existing access checks)."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Extend the send-message mutation to accept an optional image payload and call the backend sendMessage with (conversationId, text, imageOrNull); update cache invalidation behavior to remain the same for both text and image messages."
+        },
+        {
+          "path": "frontend/src/features/chat/MessageComposer.tsx",
+          "operation": "modify",
+          "description": "Add an image attachment control (file input) that accepts common image types; read selected file bytes and construct a blob for upload. Use the blob-storage component's ExternalBlob to represent uploads and to optionally track upload progress; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/features/chat/MessageThread.tsx",
+          "operation": "modify",
+          "description": "Render image messages inline when message.image is present by using ExternalBlob.getDirectURL() for a displayable URL, with sensible max width/height and responsive sizing; keep existing text bubble behavior for text-only messages. Use the blob-storage component's ExternalBlob for rendering; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/features/chat/ConversationList.tsx",
+          "operation": "modify",
+          "description": "Update last-message preview logic so image messages display an English label like \"Photo\" (and optionally \"You: Photo\" for self) instead of relying on message.text; keep existing behavior for text messages."
+        }
+      ]
+    },
+    {
+      "id": "REQ-19",
+      "summary": "Gate chats/messages/calls behind an accepted friend relationship; add UI to send requests, view incoming requests, and accept/reject; update new chat flow to send friend requests instead of starting chats with non-friends.",
+      "acceptanceCriteria": [
+        "Backend provides operations to: send friend request, list incoming pending requests, accept/reject a request, and list friends (accepted relationships).",
+        "Backend enforces that startConversation, sendMessage, and initiateCall are only allowed between users with an accepted friend relationship; otherwise the call traps/returns an error (and the frontend shows an English error toast/message).",
+        "NewChatDialog no longer starts a conversation immediately for non-friends; instead it allows sending a friend request and clearly shows request status (e.g., \"Request sent\").",
+        "The UI includes a \"Requests\" view/list where a user can see incoming requests and accept/reject them; accepting enables chat creation with that user.",
+        "After accepting a request, the user can start/open a conversation with the friend without additional steps."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/hooks/useQueries.ts",
+          "operation": "modify",
+          "description": "Add React Query hooks/mutations for friend requests and relationships: list friends, list incoming pending requests, send friend request, accept request, reject request; ensure queries invalidate/refresh the right cached lists after mutations."
+        },
+        {
+          "path": "frontend/src/features/chat/NewChatDialog.tsx",
+          "operation": "modify",
+          "description": "Update the new chat flow: determine friend status for search results, allow starting a conversation only for accepted friends, otherwise offer a \"Send friend request\" action and show clear English request status (e.g., \"Request sent\") and errors inline."
+        },
+        {
+          "path": "frontend/src/features/chat/MessageThread.tsx",
+          "operation": "modify",
+          "description": "Add friend-gating in the thread UI: disable MessageComposer and voice/video call buttons when the other user is not an accepted friend; show an English explanation and an action to send a friend request; display an English error message when backend rejects message/call due to non-friend status."
+        },
+        {
+          "path": "frontend/src/features/chat/FriendRequestsDialog.tsx",
+          "operation": "create",
+          "description": "Create a Requests UI (dialog/panel) listing incoming pending friend requests with accept/reject controls, and show appropriate English empty/loading/error states. Use shadcn-ui Dialog/Buttons/ScrollArea components to match the app styling; Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/features/chat/ChatShell.tsx",
+          "operation": "modify",
+          "description": "Wire the new Requests view into the main chat header area (e.g., add a \"Requests\" button near the new-chat/profile controls) and mount FriendRequestsDialog with open/close state so it is reachable in-app."
+        }
+      ]
+    },
+    {
+      "id": "REQ-20",
+      "summary": "Replace existing generated branding images with the user-provided logo assets as static frontend assets and render them in onboarding and main header areas.",
+      "acceptanceCriteria": [
+        "The uploaded image is converted into appropriately sized static assets placed under frontend/public/assets/generated and used as the app icon/logo in the UI in place of the previous generated branding images.",
+        "The updated assets render correctly on the name start/onboarding screen and in the main app header area (wherever branding is currently shown).",
+        "No branding images are served via the backend; all are loaded as frontend static assets."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/public/assets/generated/yglsup-app-icon.dim_512x512.png",
+          "operation": "modify",
+          "description": "Replace/update the app icon asset with the converted uploaded image output at frontend/public/assets/generated/yglsup-app-icon.dim_512x512.png."
+        },
+        {
+          "path": "frontend/public/assets/generated/yglsup-logo.dim_1200x300.png",
+          "operation": "create",
+          "description": "Add the wider header logo derived from the uploaded image at frontend/public/assets/generated/yglsup-logo.dim_1200x300.png."
+        },
+        {
+          "path": "frontend/src/features/auth/NameStartView.tsx",
+          "operation": "modify",
+          "description": "Update onboarding branding to use frontend/public/assets/generated/yglsup-logo.dim_1200x300.png (and keep English UI text); ensure the image renders with stable sizing."
+        },
+        {
+          "path": "frontend/src/features/chat/ChatShell.tsx",
+          "operation": "modify",
+          "description": "Update the main app header branding to use frontend/public/assets/generated/yglsup-app-icon.dim_512x512.png and align any header logo usage to frontend/public/assets/generated/yglsup-logo.dim_1200x300.png where applicable."
+        }
+      ]
+    }
+  ]
+}

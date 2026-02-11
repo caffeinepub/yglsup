@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        --radius: 0.75rem;
+        
+        /* Light mode - Clean white with emerald accents */
+        --background: 1 0 0;
+        --foreground: 0.2 0 0;
+        
+        --card: 1 0 0;
+        --card-foreground: 0.2 0 0;
+        
+        --popover: 1 0 0;
+        --popover-foreground: 0.2 0 0;
+        
+        /* Emerald primary */
+        --primary: 0.55 0.15 160;
+        --primary-foreground: 0.99 0 0;
+        
+        --secondary: 0.96 0.01 160;
+        --secondary-foreground: 0.2 0 0;
+        
+        --muted: 0.96 0.01 160;
+        --muted-foreground: 0.5 0.02 160;
+        
+        --accent: 0.94 0.03 160;
+        --accent-foreground: 0.2 0 0;
+        
+        --destructive: 0.55 0.22 25;
+        --destructive-foreground: 0.99 0 0;
+        
+        --border: 0.92 0.01 160;
+        --input: 0.92 0.01 160;
+        --ring: 0.55 0.15 160;
+        
+        --chart-1: 0.55 0.15 160;
+        --chart-2: 0.6 0.12 180;
+        --chart-3: 0.65 0.18 140;
+        --chart-4: 0.5 0.2 200;
+        --chart-5: 0.7 0.15 120;
+    }
+
+    .dark {
+        /* Dark mode - Deep gray with vibrant emerald accents */
+        --background: 0.15 0.01 160;
+        --foreground: 0.95 0.01 160;
+        
+        --card: 0.2 0.01 160;
+        --card-foreground: 0.95 0.01 160;
+        
+        --popover: 0.18 0.01 160;
+        --popover-foreground: 0.95 0.01 160;
+        
+        /* Brighter emerald for dark mode */
+        --primary: 0.65 0.18 160;
+        --primary-foreground: 0.15 0.01 160;
+        
+        --secondary: 0.25 0.02 160;
+        --secondary-foreground: 0.95 0.01 160;
+        
+        --muted: 0.25 0.02 160;
+        --muted-foreground: 0.6 0.03 160;
+        
+        --accent: 0.3 0.03 160;
+        --accent-foreground: 0.95 0.01 160;
+        
+        --destructive: 0.6 0.24 25;
+        --destructive-foreground: 0.15 0.01 160;
+        
+        --border: 0.3 0.02 160;
+        --input: 0.3 0.02 160;
+        --ring: 0.65 0.18 160;
+        
+        --chart-1: 0.65 0.18 160;
+        --chart-2: 0.7 0.15 180;
+        --chart-3: 0.75 0.2 140;
+        --chart-4: 0.6 0.22 200;
+        --chart-5: 0.8 0.18 120;
+    }
+
+    * {
+        @apply border-border;
+    }
+    
+    body {
+        @apply bg-background text-foreground;
+        font-feature-settings: "rlig" 1, "calt" 1;
+    }
+}
+
+@layer components {
+    .message-bubble-sent {
+        @apply bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl rounded-br-sm shadow-sm;
+    }
+    
+    .message-bubble-received {
+        @apply bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-sm shadow-sm;
+    }
+}

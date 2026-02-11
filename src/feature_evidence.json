@@ -1,0 +1,99 @@
+{
+  "kind": "feature_evidence_report",
+  "features": [
+    {
+      "featureId": "feature-fix-the-in-app-voice-video-call-option-so-that-starting-a-call-from-a-1-1-conversation-reliably-opens-the-callscreen-requests-microphone-camera-permissions-as-needed-and-shows-a-clear-in-ui-error-state-when-media-permissions-are-denied-or-media-acquisition-fails",
+      "featureTitle": "Fix the in-app voice/video call option so that starting a call from a 1:1 conversation reliably opens the CallScreen, requests microphone/camera permissions as needed, and shows a clear in-UI error state when media permissions are denied or media acquisition fails.",
+      "files": [
+        "frontend/src/features/calls/CallScreen.tsx",
+        "frontend/src/features/calls/useLocalMedia.ts",
+        "frontend/src/features/chat/MessageThread.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "camera@1.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-17"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-add-an-in-chat-picture-sharing-option-in-1-1-conversations-users-can-pick-an-image-from-their-device-send-it-as-a-message-and-recipients-can-view-it-inline-in-the-message-thread",
+      "featureTitle": "Add an in-chat picture sharing option in 1:1 conversations: users can pick an image from their device, send it as a message, and recipients can view it inline in the message thread.",
+      "files": [
+        "frontend/src/features/chat/ConversationList.tsx",
+        "frontend/src/features/chat/MessageComposer.tsx",
+        "frontend/src/features/chat/MessageThread.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "camera@1.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-18"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-implement-a-friend-request-system-where-users-must-send-a-friend-request-and-the-recipient-must-accept-it-before-either-user-can-start-a-chat-send-messages-or-initiate-calls-with-the-other-user",
+      "featureTitle": "Implement a friend request system where users must send a friend request and the recipient must accept it before either user can start a chat, send messages, or initiate calls with the other user.",
+      "files": [
+        "frontend/src/features/chat/ChatShell.tsx",
+        "frontend/src/features/chat/FriendRequestsDialog.tsx",
+        "frontend/src/features/chat/MessageThread.tsx",
+        "frontend/src/features/chat/NewChatDialog.tsx",
+        "frontend/src/hooks/useQueries.ts"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "camera@1.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-19"
+      ],
+      "confidence": "high"
+    },
+    {
+      "featureId": "feature-update-yglsup-branding-assets-to-use-the-user-provided-uploaded-picture-in-the-app-as-the-primary-logo-app-icon-and-render-it-wherever-the-app-currently-shows-its-generated-branding-images",
+      "featureTitle": "Update YGLSUP branding assets to use the user-provided uploaded picture in the app as the primary logo/app icon, and render it wherever the app currently shows its generated branding images.",
+      "files": [
+        "frontend/src/features/auth/NameStartView.tsx",
+        "frontend/src/features/chat/ChatShell.tsx"
+      ],
+      "components": [
+        "core-infrastructure@1.0.2",
+        "shadcn-ui@1.0.0",
+        "build-template-react@1.0.0",
+        "initial-app@1.0.0",
+        "github-export-icp-cli@1.0.0",
+        "authorization@4.0.0",
+        "camera@1.0.0",
+        "blob-storage@4.0.0"
+      ],
+      "testIds": [
+        "REQ-20"
+      ],
+      "confidence": "high"
+    }
+  ]
+}
