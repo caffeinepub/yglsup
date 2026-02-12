@@ -12,9 +12,9 @@ import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
-import Migration "migration";
 
-(with migration = Migration.run)
+
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -52,6 +52,7 @@ actor {
   };
 
   type ConversationMetadata = {
+    conversationId : Text;
     participants : (UserId, UserId);
     lastMessage : ?Message;
     lastUpdate : Timestamp;
@@ -392,17 +393,26 @@ actor {
       Runtime.trap("Can only start conversations with friends");
     };
     let conversationId = makeConversationId(caller, other);
-    let participants = (caller, other);
-    let emptyLastSeen = Map.empty<UserId, Timestamp>();
-    let conversation : Conversation = {
-      id = conversationId;
-      participants;
-      messages = [];
-      lastSeen = emptyLastSeen;
-      lastUpdate = Time.now();
+
+    switch (conversations.get(conversationId)) {
+      case (?existingConversation) {
+        // Conversation already exists, just return the id
+        conversationId;
+      };
+      case (null) {
+        let participants = (caller, other);
+        let emptyLastSeen = Map.empty<UserId, Timestamp>();
+        let conversation : Conversation = {
+          id = conversationId;
+          participants;
+          messages = [];
+          lastSeen = emptyLastSeen;
+          lastUpdate = Time.now();
+        };
+        conversations.add(conversationId, conversation);
+        conversationId;
+      };
     };
-    conversations.add(conversationId, conversation);
-    conversationId;
   };
 
   public shared ({ caller }) func sendMessage(conversationId : ConversationId, text : Text, image : ?Storage.ExternalBlob) : async Message {
@@ -473,6 +483,7 @@ actor {
             null;
           };
           {
+            conversationId = convo.id;
             participants = convo.participants;
             lastMessage;
             lastUpdate = convo.lastUpdate;

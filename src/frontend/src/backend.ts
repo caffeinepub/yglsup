@@ -130,6 +130,7 @@ export interface ConversationMetadata {
     participants: [UserId, UserId];
     lastMessage?: Message;
     lastUpdate: Timestamp;
+    conversationId: string;
 }
 export type CallId = string;
 export interface UserProfile {
@@ -752,15 +753,18 @@ async function from_candid_record_n24(_uploadFile: (file: ExternalBlob) => Promi
     participants: [_UserId, _UserId];
     lastMessage: [] | [_Message];
     lastUpdate: _Timestamp;
+    conversationId: string;
 }): Promise<{
     participants: [UserId, UserId];
     lastMessage?: Message;
     lastUpdate: Timestamp;
+    conversationId: string;
 }> {
     return {
         participants: value.participants,
         lastMessage: record_opt_to_undefined(await from_candid_opt_n25(_uploadFile, _downloadFile, value.lastMessage)),
-        lastUpdate: value.lastUpdate
+        lastUpdate: value.lastUpdate,
+        conversationId: value.conversationId
     };
 }
 async function from_candid_record_n27(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {

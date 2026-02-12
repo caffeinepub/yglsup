@@ -61,6 +61,7 @@ export const ConversationMetadata = IDL.Record({
   'participants' : IDL.Tuple(UserId, UserId),
   'lastMessage' : IDL.Opt(Message),
   'lastUpdate' : Timestamp,
+  'conversationId' : IDL.Text,
 });
 export const InternalUserProfile = IDL.Record({
   'principal' : IDL.Principal,
@@ -202,6 +203,7 @@ export const idlFactory = ({ IDL }) => {
     'participants' : IDL.Tuple(UserId, UserId),
     'lastMessage' : IDL.Opt(Message),
     'lastUpdate' : Timestamp,
+    'conversationId' : IDL.Text,
   });
   const InternalUserProfile = IDL.Record({
     'principal' : IDL.Principal,

@@ -64,10 +64,9 @@ export default function ConversationList({
           const [user1, user2] = conversation.participants;
           const otherUserId =
             user1.toString() === currentUser.principal.toString() ? user2 : user1;
-          const isUnread = unreadConversations.includes(
-            `${user1.toString()}-${user2.toString()}` as ConversationId
-          );
-          const conversationId = `${user1.toString()}-${user2.toString()}` as ConversationId;
+          // Use canonical conversationId from backend metadata
+          const conversationId = conversation.conversationId;
+          const isUnread = unreadConversations.includes(conversationId);
           const isSelected = conversationId === selectedConversationId;
 
           return (

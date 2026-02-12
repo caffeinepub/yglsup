@@ -35,6 +35,7 @@ export interface ConversationMetadata {
   'participants' : [UserId, UserId],
   'lastMessage' : [] | [Message],
   'lastUpdate' : Timestamp,
+  'conversationId' : string,
 }
 export type ExternalBlob = Uint8Array;
 export interface InternalUserProfile {

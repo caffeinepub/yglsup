@@ -1,12 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Restore voice/video calling in production by fixing WebRTC signaling/SDP lifecycle, incoming call detection, and backend call status transitions, and by improving frontend error visibility for debugging.
+**Goal:** Fix chat start failures by using a consistent canonical conversation ID across backend and frontend, prevent existing chats from being reset, and ensure chat threads auto-scroll to the newest message with clearer English error messages.
 
 **Planned changes:**
-- Fix outgoing call signaling so the RTCPeerConnection that creates the SDP offer is the same one that later applies the SDP answer, using the backend-stored offer/answer for the call session.
-- Implement/fix backend getPendingIncomingCalls() to reliably return only actionable incoming calls for the authenticated user (e.g., initiated/ringing where caller != callee).
-- Align backend call session lifecycle with the frontend flow by enforcing consistent status transitions for startCall, answerCall, and updateCallStatus, including participant-only access/mutation and protection against invalid transitions.
-- Improve frontend call failure visibility by surfacing English error messages for backend/signaling/permission failures and logging underlying errors to the console, without modifying immutable hook/UI paths.
+- Backend: Update `getConversations()` to return conversation metadata that includes the canonical `conversationId` used as the key in stored conversation records.
+- Frontend: Stop reconstructing conversation IDs from participant pairs; use the backend-provided `conversationId` for conversation selection, message fetching, unread status checks, and related operations.
+- Backend: Update `startConversation()` so that if a conversation already exists for two users, it returns the existing `conversationId` without overwriting stored conversation data (messages/lastSeen).
+- Frontend: Implement reliable auto-scroll to the latest message when new messages arrive (including via polling), scrolling the actual `ScrollArea` viewport.
+- Frontend: Improve chat start failure errors to reflect backend failure reasons (e.g., “You must be friends to chat”), with an English generic fallback for unexpected failures.
 
-**User-visible outcome:** From a 1:1 chat, users can place and receive voice calls that reliably ring, connect after acceptance, and end cleanly; if something fails (permissions or signaling/backend issues), the call UI shows a clear English error and developers can see details in console logs.
+**User-visible outcome:** Users can consistently open existing chats without “Failed to chat/start conversation” errors, chat history is preserved when re-starting a chat with the same user, incoming/new messages automatically scroll into view, and chat start errors display clearer English reasons when applicable.

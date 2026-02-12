@@ -44,6 +44,7 @@ export interface ConversationMetadata {
     participants: [UserId, UserId];
     lastMessage?: Message;
     lastUpdate: Timestamp;
+    conversationId: string;
 }
 export type CallId = string;
 export interface UserProfile {

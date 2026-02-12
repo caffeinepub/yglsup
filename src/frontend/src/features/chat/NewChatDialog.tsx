@@ -36,12 +36,19 @@ export default function NewChatDialog({
       const conversationId = await startConversationMutation.mutateAsync(otherUser.principal);
       onConversationStart(conversationId);
       setSearchTerm('');
+      onOpenChange(false);
     } catch (error: any) {
       console.error('Failed to start conversation:', error);
-      if (error.message?.includes('friendship')) {
-        toast.error('Cannot start conversation with this user');
+      
+      // Parse backend error messages for user-friendly display
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('friends') || errorMessage.includes('friendship')) {
+        toast.error('You must be friends to start a chat.');
+      } else if (errorMessage.includes('yourself')) {
+        toast.error('Cannot start a conversation with yourself.');
       } else {
-        toast.error('Failed to start conversation');
+        toast.error('Failed to start chat. Please try again.');
       }
     }
   };
@@ -55,7 +62,7 @@ export default function NewChatDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Start New Chat</DialogTitle>
-          <DialogDescription>Search for users to start a conversation</DialogDescription>
+          <DialogDescription>Search for a user to start chatting</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="relative">
@@ -69,17 +76,15 @@ export default function NewChatDialog({
             />
           </div>
 
-          <div className="max-h-[300px] overflow-y-auto space-y-2">
+          <div className="max-h-[300px] overflow-y-auto space-y-1">
             {isSearching ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
               </div>
-            ) : filteredResults.length === 0 && searchTerm.trim() ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No users found</p>
             ) : filteredResults.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Start typing to search for users
-              </p>
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                {searchTerm.trim() ? 'No users found' : 'Start typing to search'}
+              </div>
             ) : (
               filteredResults.map((user) => {
                 const initials = user.displayName
@@ -90,31 +95,25 @@ export default function NewChatDialog({
                   .slice(0, 2);
 
                 return (
-                  <div
+                  <button
                     key={user.principal.toString()}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    onClick={() => handleStartConversation(user)}
+                    disabled={startConversationMutation.isPending}
+                    className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
                   >
                     <Avatar className="h-10 w-10">
                       <AvatarFallback className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-semibold">
                         {initials}
                       </AvatarFallback>
                     </Avatar>
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 text-left min-w-0">
                       <p className="font-medium text-sm truncate">{user.displayName}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {user.principal.toString().slice(0, 30)}...
+                        {user.principal.toString().slice(0, 20)}...
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => handleStartConversation(user)}
-                      disabled={startConversationMutation.isPending}
-                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-1.5" />
-                      Chat
-                    </Button>
-                  </div>
+                    <MessageSquare className="h-5 w-5 text-emerald-600 shrink-0" />
+                  </button>
                 );
               })
             )}

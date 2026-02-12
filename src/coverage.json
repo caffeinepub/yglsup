@@ -1,70 +1,64 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T08:06:43.754Z",
+  "generatedAt": "2026-02-12T08:37:47.560Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
     "total": 4,
-    "implemented": 2,
+    "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the outgoing call WebRTC/signaling flow so that the same RTCPeerConnection used to generate the SDP offer is the one that later applies the SDP answer, and ensure the backend-stored offer/answer lifecycle results in a connected call between two different users.",
+        "summary": "Fix the “Failed to start chat / Failed to chat” issue by making conversation IDs consistent across backend and frontend: (a) update the backend ConversationMetadata returned by getConversations() to include the canonical conversation id field, and (b) update the frontend to use that id everywhere (selecting a conversation, fetching messages, unread checks), instead of reconstructing IDs from participants.",
         "status": "implemented",
         "plannedFiles": [
+          "frontend/src/features/chat/ConversationList.tsx",
           "frontend/src/features/chat/MessageThread.tsx",
-          "frontend/src/features/calls/CallProvider.tsx",
-          "frontend/src/features/calls/CallScreen.tsx",
-          "frontend/src/features/calls/IncomingCallManager.tsx"
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/MessageThread.tsx",
-          "frontend/src/features/calls/CallProvider.tsx",
-          "frontend/src/features/calls/CallScreen.tsx",
-          "frontend/src/features/calls/IncomingCallManager.tsx"
+          "frontend/src/features/chat/ConversationList.tsx",
+          "frontend/src/features/chat/MessageThread.tsx"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Fix incoming call detection end-to-end in production by ensuring the backend exposes a working getPendingIncomingCalls() query for the authenticated user and that it returns only actionable incoming calls (e.g., initiated/ringing where caller != callee) so the frontend polling can reliably show the incoming call dialog.",
+        "summary": "Prevent startConversation from deleting/resetting an existing conversation: if a conversation already exists for the two users, return the existing conversationId without overwriting the stored conversation record/messages/lastSeen.",
         "status": "unknown",
         "plannedFiles": [],
         "matchedFiles": []
       },
       {
         "id": "REQ-3",
-        "summary": "Align backend call lifecycle semantics with the frontend call flow by enforcing consistent and valid status transitions for startCall, answerCall, and updateCallStatus, including correct status after answering and protection against invalid transitions by non-participants.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
+        "summary": "Implement reliable automatic scrolling to the latest message in the chat thread when new messages arrive (including messages received via polling). Ensure the scroll is applied to the actual scrollable viewport used by the ScrollArea component.",
+        "status": "implemented",
+        "plannedFiles": [
+          "frontend/src/features/chat/MessageThread.tsx",
+          "frontend/src/features/chat/useMessagePolling.ts"
+        ],
+        "matchedFiles": [
+          "frontend/src/features/chat/MessageThread.tsx"
+        ]
       },
       {
         "id": "REQ-4",
-        "summary": "Improve call failure visibility on the frontend so users and developers can diagnose why calls fail in production (permissions, backend traps, signaling missing offer/answer) without changing any immutable hook files.",
+        "summary": "Improve the user-facing error shown when starting a chat fails so it reflects backend failure reasons (e.g., “Can only start conversations with friends”) instead of only showing a generic “Failed to start conversation”. All user-facing text must be English.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/calls/useCallSignaling.ts",
-          "frontend/src/features/calls/useIncomingCallPolling.ts",
-          "frontend/src/features/calls/CallScreen.tsx",
-          "frontend/src/features/calls/IncomingCallManager.tsx",
-          "frontend/src/features/calls/CallChip.tsx"
+          "frontend/src/features/chat/NewChatDialog.tsx",
+          "frontend/src/hooks/useQueries.ts"
         ],
         "matchedFiles": [
-          "frontend/src/features/calls/useCallSignaling.ts",
-          "frontend/src/features/calls/useIncomingCallPolling.ts",
-          "frontend/src/features/calls/CallScreen.tsx",
-          "frontend/src/features/calls/IncomingCallManager.tsx",
-          "frontend/src/features/calls/CallChip.tsx"
+          "frontend/src/features/chat/NewChatDialog.tsx"
         ]
       }
     ]
   },
   "changedFiles": [
     "backend/main.mo",
-    "backend/migration.mo",
     "build-request.json",
     "feature_evidence.json",
     "frontend-file-summaries.txt",
@@ -73,13 +67,9 @@
     "frontend/src/backend.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/features/calls/CallChip.tsx",
-    "frontend/src/features/calls/CallProvider.tsx",
-    "frontend/src/features/calls/CallScreen.tsx",
-    "frontend/src/features/calls/IncomingCallManager.tsx",
-    "frontend/src/features/calls/useCallSignaling.ts",
-    "frontend/src/features/calls/useIncomingCallPolling.ts",
+    "frontend/src/features/chat/ConversationList.tsx",
     "frontend/src/features/chat/MessageThread.tsx",
+    "frontend/src/features/chat/NewChatDialog.tsx",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",
