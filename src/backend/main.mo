@@ -13,8 +13,6 @@ import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
 
-
-
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -122,6 +120,14 @@ actor {
     };
   };
 
+  public type FriendshipStatus = {
+    #notFriends;
+    #pendingOutgoing;
+    #pendingIncoming;
+    #friends;
+    #blocked;
+  };
+
   let users = Map.empty<UserId, InternalUserProfile>();
   let conversations = Map.empty<ConversationId, Conversation>();
   let calls = Map.empty<CallId, CallSession>();
@@ -169,6 +175,11 @@ actor {
   func getFriendship(user1 : Principal, user2 : Principal) : ?Friendship {
     let key = getFriendshipKey(user1, user2);
     friendships.get(key);
+  };
+
+  // New lightweight canister health check method
+  public query ({ caller }) func checkHealth() : async { status : Text } {
+    { status = "Ok" };
   };
 
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
@@ -361,9 +372,7 @@ actor {
         friendship.status == #accepted and (key.user1 == caller or key.user2 == caller);
       }
     ).map<(FriendshipKey, Friendship), Principal>(
-        func((key, _) : (FriendshipKey, Friendship)) : Principal {
-          if (key.user1 == caller) { key.user2 } else { key.user1 };
-        }
+        func((key, _)) { if (key.user1 == caller) { key.user2 } else { key.user1 } }
       ).toArray();
   };
 
@@ -376,10 +385,36 @@ actor {
         friendship.status == #pending and friendship.initiatedBy != caller and (key.user1 == caller or key.user2 == caller);
       }
     ).map<(FriendshipKey, Friendship), Principal>(
-        func((key, friendship) : (FriendshipKey, Friendship)) : Principal {
+        func((key, _ : Friendship)) : Principal {
           if (key.user1 == caller) { key.user2 } else { key.user1 };
         }
       ).toArray();
+  };
+
+  public query ({ caller }) func getRelationshipStatus(other : Principal) : async FriendshipStatus {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can check relationship status");
+    };
+    if (caller == other) {
+      Runtime.trap("Cannot check relationship status with yourself");
+    };
+    switch (friendships.get(getFriendshipKey(caller, other))) {
+      case (?friendship) {
+        switch (friendship.status) {
+          case (#accepted) { #friends };
+          case (#pending) {
+            if (friendship.initiatedBy == caller) {
+              #pendingOutgoing;
+            } else {
+              #pendingIncoming;
+            };
+          };
+          case (#blocked) { #blocked };
+          case (#declined) { #notFriends };
+        };
+      };
+      case (null) { #notFriends };
+    };
   };
 
   public shared ({ caller }) func startConversation(other : UserId) : async ConversationId {
@@ -396,7 +431,6 @@ actor {
 
     switch (conversations.get(conversationId)) {
       case (?existingConversation) {
-        // Conversation already exists, just return the id
         conversationId;
       };
       case (null) {
@@ -711,6 +745,32 @@ actor {
       case (null) {
         Runtime.trap("Call session not found");
       };
+    };
+  };
+
+  public query ({ caller }) func getFriendCommand(target : Principal) : async Text {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return "not-authorized";
+    };
+    if (target == caller) {
+      return "cannot-send-friend-request-to-yourself";
+    };
+    switch (friendships.get(getFriendshipKey(caller, target))) {
+      case (?friendship) {
+        switch (friendship.status) {
+          case (#accepted) { return "already-friends" };
+          case (#pending) {
+            if (friendship.initiatedBy == caller) {
+              return "pending";
+            } else {
+              return "accept-request";
+            };
+          };
+          case (#blocked) { return "blocked" };
+          case (#declined) { return "not-friends" };
+        };
+      };
+      case (null) { return "not-friends" };
     };
   };
 };

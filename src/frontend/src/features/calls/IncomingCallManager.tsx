@@ -85,13 +85,22 @@ export default function IncomingCallManager() {
         answer: answerSdp,
       });
 
-      // Open call UI
+      // Update call status to inProgress so caller knows we're connected
+      await updateCallStatusMutation.mutateAsync({
+        callId: currentIncomingCall.id,
+        status: CallStatus.inProgress,
+      });
+
+      // Open call UI with inProgress status
       receiveCall(
         currentIncomingCall.caller,
         callerUser.displayName,
         currentIncomingCall.kind,
         currentIncomingCall.id
       );
+
+      // Update local call state to inProgress
+      updateCallStatus(CallStatus.inProgress);
 
       // Clear dialog
       setCurrentIncomingCall(null);

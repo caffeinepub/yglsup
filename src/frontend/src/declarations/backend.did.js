@@ -67,6 +67,13 @@ export const InternalUserProfile = IDL.Record({
   'principal' : IDL.Principal,
   'displayName' : IDL.Text,
 });
+export const FriendshipStatus = IDL.Variant({
+  'blocked' : IDL.Null,
+  'pendingOutgoing' : IDL.Null,
+  'notFriends' : IDL.Null,
+  'friends' : IDL.Null,
+  'pendingIncoming' : IDL.Null,
+});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -100,6 +107,11 @@ export const idlService = IDL.Service({
   'answerCall' : IDL.Func([CallId, IDL.Text], [CallSession], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'blockUser' : IDL.Func([IDL.Principal], [], []),
+  'checkHealth' : IDL.Func(
+      [],
+      [IDL.Record({ 'status' : IDL.Text })],
+      ['query'],
+    ),
   'declineFriendRequest' : IDL.Func([IDL.Principal], [], []),
   'deleteConversation' : IDL.Func([ConversationId], [], []),
   'getCallSession' : IDL.Func([CallId], [IDL.Opt(CallSession)], ['query']),
@@ -107,6 +119,7 @@ export const idlService = IDL.Service({
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getConversations' : IDL.Func([], [IDL.Vec(ConversationMetadata)], ['query']),
   'getCurrentUser' : IDL.Func([], [IDL.Opt(InternalUserProfile)], ['query']),
+  'getFriendCommand' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
   'getFriends' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
   'getMessages' : IDL.Func([ConversationId], [IDL.Vec(Message)], ['query']),
   'getPendingFriendRequests' : IDL.Func(
@@ -115,6 +128,11 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'getPendingIncomingCalls' : IDL.Func([], [IDL.Vec(CallSession)], ['query']),
+  'getRelationshipStatus' : IDL.Func(
+      [IDL.Principal],
+      [FriendshipStatus],
+      ['query'],
+    ),
   'getUnreadConversations' : IDL.Func([], [IDL.Vec(ConversationId)], ['query']),
   'getUser' : IDL.Func(
       [IDL.Principal],
@@ -209,6 +227,13 @@ export const idlFactory = ({ IDL }) => {
     'principal' : IDL.Principal,
     'displayName' : IDL.Text,
   });
+  const FriendshipStatus = IDL.Variant({
+    'blocked' : IDL.Null,
+    'pendingOutgoing' : IDL.Null,
+    'notFriends' : IDL.Null,
+    'friends' : IDL.Null,
+    'pendingIncoming' : IDL.Null,
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -242,6 +267,11 @@ export const idlFactory = ({ IDL }) => {
     'answerCall' : IDL.Func([CallId, IDL.Text], [CallSession], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'blockUser' : IDL.Func([IDL.Principal], [], []),
+    'checkHealth' : IDL.Func(
+        [],
+        [IDL.Record({ 'status' : IDL.Text })],
+        ['query'],
+      ),
     'declineFriendRequest' : IDL.Func([IDL.Principal], [], []),
     'deleteConversation' : IDL.Func([ConversationId], [], []),
     'getCallSession' : IDL.Func([CallId], [IDL.Opt(CallSession)], ['query']),
@@ -253,6 +283,7 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCurrentUser' : IDL.Func([], [IDL.Opt(InternalUserProfile)], ['query']),
+    'getFriendCommand' : IDL.Func([IDL.Principal], [IDL.Text], ['query']),
     'getFriends' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getMessages' : IDL.Func([ConversationId], [IDL.Vec(Message)], ['query']),
     'getPendingFriendRequests' : IDL.Func(
@@ -261,6 +292,11 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getPendingIncomingCalls' : IDL.Func([], [IDL.Vec(CallSession)], ['query']),
+    'getRelationshipStatus' : IDL.Func(
+        [IDL.Principal],
+        [FriendshipStatus],
+        ['query'],
+      ),
     'getUnreadConversations' : IDL.Func(
         [],
         [IDL.Vec(ConversationId)],

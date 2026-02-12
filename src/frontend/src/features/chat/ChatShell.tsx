@@ -3,8 +3,11 @@ import ConversationList from './ConversationList';
 import MessageThread from './MessageThread';
 import ProfileMenu from '../profile/ProfileMenu';
 import NewChatDialog from './NewChatDialog';
+import FriendRequestsDialog from './FriendRequestsDialog';
 import { Button } from '@/components/ui/button';
-import { MessageSquarePlus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MessageSquarePlus, UserPlus } from 'lucide-react';
+import { useGetPendingFriendRequests } from '../../hooks/useQueries';
 import type { InternalUserProfile, ConversationId } from '../../backend';
 
 interface ChatShellProps {
@@ -14,6 +17,8 @@ interface ChatShellProps {
 export default function ChatShell({ currentUser }: ChatShellProps) {
   const [selectedConversationId, setSelectedConversationId] = useState<ConversationId | null>(null);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showFriendRequests, setShowFriendRequests] = useState(false);
+  const { data: pendingRequests = [] } = useGetPendingFriendRequests();
 
   const handleConversationStart = (conversationId: ConversationId) => {
     setSelectedConversationId(conversationId);
@@ -46,6 +51,24 @@ export default function ChatShell({ currentUser }: ChatShellProps) {
             <h1 className="text-lg font-bold text-white truncate">YGLSUP</h1>
           </div>
           <div className="flex items-center space-x-1 shrink-0">
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowFriendRequests(true)}
+                className="text-white hover:bg-white/20 h-9 w-9"
+              >
+                <UserPlus className="h-5 w-5" />
+              </Button>
+              {pendingRequests.length > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                >
+                  {pendingRequests.length}
+                </Badge>
+              )}
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -107,6 +130,12 @@ export default function ChatShell({ currentUser }: ChatShellProps) {
         onOpenChange={setShowNewChat}
         onConversationStart={handleConversationStart}
         currentUser={currentUser}
+      />
+
+      {/* Friend Requests Dialog */}
+      <FriendRequestsDialog
+        open={showFriendRequests}
+        onOpenChange={setShowFriendRequests}
       />
     </div>
   );

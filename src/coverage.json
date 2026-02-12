@@ -1,58 +1,55 @@
 {
   "kind": "coverage_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T08:37:47.560Z",
+  "generatedAt": "2026-02-12T12:29:50.502Z",
   "sources": {
     "buildRequest": true,
     "implementationPlan": true
   },
   "requirements": {
-    "total": 4,
+    "total": 3,
     "implemented": 3,
     "items": [
       {
         "id": "REQ-1",
-        "summary": "Fix the “Failed to start chat / Failed to chat” issue by making conversation IDs consistent across backend and frontend: (a) update the backend ConversationMetadata returned by getConversations() to include the canonical conversation id field, and (b) update the frontend to use that id everywhere (selecting a conversation, fetching messages, unread checks), instead of reconstructing IDs from participants.",
+        "summary": "Prevent actor initialization from failing due to missing/empty or invalid admin token values by making admin-token initialization optional and non-fatal in all actor initialization paths.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/ConversationList.tsx",
-          "frontend/src/features/chat/MessageThread.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useActor.ts",
+          "frontend/src/hooks/useLocalActor.ts",
+          "frontend/src/features/init/sanitizeInitError.ts"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/ConversationList.tsx",
-          "frontend/src/features/chat/MessageThread.tsx"
+          "frontend/src/hooks/useLocalActor.ts",
+          "frontend/src/features/init/sanitizeInitError.ts"
         ]
       },
       {
         "id": "REQ-2",
-        "summary": "Prevent startConversation from deleting/resetting an existing conversation: if a conversation already exists for the two users, return the existing conversationId without overwriting the stored conversation record/messages/lastSeen.",
-        "status": "unknown",
-        "plannedFiles": [],
-        "matchedFiles": []
-      },
-      {
-        "id": "REQ-3",
-        "summary": "Implement reliable automatic scrolling to the latest message in the chat thread when new messages arrive (including messages received via polling). Ensure the scroll is applied to the actual scrollable viewport used by the ScrollArea component.",
+        "summary": "Improve the initialization error UX so the user can reliably recover from initialization failures caused by authorization/token issues (and not just generic network errors).",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/MessageThread.tsx",
-          "frontend/src/features/chat/useMessagePolling.ts"
+          "frontend/src/features/init/sanitizeInitError.ts",
+          "frontend/src/features/init/InitErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/MessageThread.tsx"
+          "frontend/src/features/init/sanitizeInitError.ts",
+          "frontend/src/features/init/InitErrorScreen.tsx",
+          "frontend/src/App.tsx"
         ]
       },
       {
-        "id": "REQ-4",
-        "summary": "Improve the user-facing error shown when starting a chat fails so it reflects backend failure reasons (e.g., “Can only start conversations with friends”) instead of only showing a generic “Failed to start conversation”. All user-facing text must be English.",
+        "id": "REQ-3",
+        "summary": "Add a lightweight backend health-check method that does not require user permissions, and use it during frontend initialization to detect unreachable-canister vs authorization failures more accurately.",
         "status": "implemented",
         "plannedFiles": [
-          "frontend/src/features/chat/NewChatDialog.tsx",
-          "frontend/src/hooks/useQueries.ts"
+          "frontend/src/hooks/useLocalActor.ts",
+          "frontend/src/features/init/sanitizeInitError.ts"
         ],
         "matchedFiles": [
-          "frontend/src/features/chat/NewChatDialog.tsx"
+          "frontend/src/hooks/useLocalActor.ts",
+          "frontend/src/features/init/sanitizeInitError.ts"
         ]
       }
     ]
@@ -63,13 +60,14 @@
     "feature_evidence.json",
     "frontend-file-summaries.txt",
     "frontend-implementation-plan.json",
+    "frontend/src/App.tsx",
     "frontend/src/backend.d.ts",
     "frontend/src/backend.ts",
     "frontend/src/declarations/backend.did.d.ts",
     "frontend/src/declarations/backend.did.js",
-    "frontend/src/features/chat/ConversationList.tsx",
-    "frontend/src/features/chat/MessageThread.tsx",
-    "frontend/src/features/chat/NewChatDialog.tsx",
+    "frontend/src/features/init/InitErrorScreen.tsx",
+    "frontend/src/features/init/sanitizeInitError.ts",
+    "frontend/src/hooks/useLocalActor.ts",
     "project_state.json",
     "scratch/component-selection.json",
     "spec.md",

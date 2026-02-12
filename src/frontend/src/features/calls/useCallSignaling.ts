@@ -1,76 +1,74 @@
 import { useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useLocalActor } from '../../hooks/useLocalActor';
+import { useGetCallSession } from '../../hooks/useQueries';
 import { CallStatus } from '../../backend';
-import type { CallSession } from '../../backend';
+import type { CallId } from '../../backend';
 
 interface UseCallSignalingOptions {
-  callId: string | null;
+  callId: CallId | null;
   enabled: boolean;
   onStatusChange?: (status: CallStatus) => void;
-  onOfferAvailable?: (offer: string) => void;
-  onAnswerAvailable?: (answer: string) => void;
+  onOfferReceived?: (offer: string) => void;
+  onAnswerReceived?: (answer: string) => void;
+}
+
+interface UseCallSignalingReturn {
+  callSession: ReturnType<typeof useGetCallSession>['data'];
+  isLoading: boolean;
+  error: string | null;
 }
 
 export function useCallSignaling({
   callId,
   enabled,
   onStatusChange,
-  onOfferAvailable,
-  onAnswerAvailable,
-}: UseCallSignalingOptions) {
-  const { actor } = useLocalActor();
-  const previousStatusRef = useRef<CallStatus | null>(null);
-  const offerNotifiedRef = useRef(false);
-  const answerNotifiedRef = useRef(false);
+  onOfferReceived,
+  onAnswerReceived,
+}: UseCallSignalingOptions): UseCallSignalingReturn {
+  const { data: callSession, isLoading, error: queryError } = useGetCallSession(enabled ? callId : null);
+  
+  const lastStatusRef = useRef<CallStatus | null>(null);
+  const lastOfferRef = useRef<string | null>(null);
+  const lastAnswerRef = useRef<string | null>(null);
 
-  const { data: callSession, error } = useQuery<CallSession | null>({
-    queryKey: ['callSession', callId],
-    queryFn: async () => {
-      if (!actor || !callId) return null;
-      try {
-        return await actor.getCallSession(callId);
-      } catch (error: any) {
-        console.error('Failed to fetch call session:', error);
-        throw new Error('Failed to fetch call session: ' + (error.message || 'Unknown error'));
-      }
-    },
-    enabled: enabled && !!actor && !!callId,
-    refetchInterval: 2000, // Poll every 2 seconds
-    retry: 3,
-  });
-
+  // Reset refs when callId changes
   useEffect(() => {
-    if (callSession) {
-      // Notify status changes
-      if (callSession.status !== previousStatusRef.current) {
-        previousStatusRef.current = callSession.status;
-        onStatusChange?.(callSession.status);
-      }
-
-      // Notify offer availability (for callee)
-      if (callSession.offer && !offerNotifiedRef.current) {
-        offerNotifiedRef.current = true;
-        onOfferAvailable?.(callSession.offer);
-      }
-
-      // Notify answer availability (for caller)
-      if (callSession.answer && !answerNotifiedRef.current) {
-        answerNotifiedRef.current = true;
-        onAnswerAvailable?.(callSession.answer);
-      }
-    }
-  }, [callSession, onStatusChange, onOfferAvailable, onAnswerAvailable]);
-
-  // Reset notification flags when callId changes
-  useEffect(() => {
-    offerNotifiedRef.current = false;
-    answerNotifiedRef.current = false;
-    previousStatusRef.current = null;
+    lastStatusRef.current = null;
+    lastOfferRef.current = null;
+    lastAnswerRef.current = null;
   }, [callId]);
 
-  return { 
+  // Notify on status change
+  useEffect(() => {
+    if (callSession && callSession.status !== lastStatusRef.current) {
+      lastStatusRef.current = callSession.status;
+      onStatusChange?.(callSession.status);
+    }
+  }, [callSession?.status, onStatusChange]);
+
+  // Notify on offer received
+  useEffect(() => {
+    if (callSession?.offer && callSession.offer !== lastOfferRef.current) {
+      lastOfferRef.current = callSession.offer;
+      onOfferReceived?.(callSession.offer);
+    }
+  }, [callSession?.offer, onOfferReceived]);
+
+  // Notify on answer received
+  useEffect(() => {
+    if (callSession?.answer && callSession.answer !== lastAnswerRef.current) {
+      lastAnswerRef.current = callSession.answer;
+      onAnswerReceived?.(callSession.answer);
+    }
+  }, [callSession?.answer, onAnswerReceived]);
+
+  // Convert query error to user-friendly message
+  const errorMessage = queryError 
+    ? 'Failed to fetch call session' 
+    : null;
+
+  return {
     callSession,
-    error: error ? String(error) : null,
+    isLoading,
+    error: errorMessage,
   };
 }

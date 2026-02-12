@@ -1,72 +1,79 @@
 {
   "kind": "implementation_plan",
   "version": "1.0",
-  "title": "Chat reliability fixes: canonical conversation IDs, viewport auto-scroll, and better start-chat errors",
+  "title": "Harden frontend initialization: optional admin-token init, clearer InitError UX, and health-check based diagnostics",
   "requirements": [
     {
       "id": "REQ-1",
-      "summary": "Stop reconstructing conversation IDs on the frontend; use the canonical conversationId returned by backend conversation metadata for selection, unread checks, deletion, and message fetching.",
+      "summary": "Make admin-token initialization optional/non-fatal and convert invalid-token failures into explicit initialization errors.",
       "acceptanceCriteria": [
-        "Frontend no longer builds conversationId strings via `${user1}-${user2}`; it uses the id from backend metadata for selection, unread status checks, delete, and message fetching.",
-        "Selecting a conversation from the list reliably loads messages (no 'Conversation not found' traps) regardless of principal ordering.",
-        "Unread badge status matches backend getUnreadConversations() results."
+        "When no caffeineAdminToken is present, the app does not throw during actor initialization.",
+        "When caffeineAdminToken is present but invalid, the app shows a clear error state (InitErrorScreen) instead of hanging or crashing.",
+        "`frontend/src/hooks/useActor.ts` no longer calls `_initializeAccessControlWithSecret` with an empty string token.",
+        "`frontend/src/hooks/useLocalActor.ts` treats `_initializeAccessControlWithSecret` errors as initialization errors with a sanitized message."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/features/chat/ConversationList.tsx",
+          "path": "frontend/src/hooks/useActor.ts",
           "operation": "modify",
-          "description": "Update conversation rendering to use `conversation.conversationId` from `ConversationMetadata` as the list key, selection id, delete id, and unread check id (instead of reconstructing from participants). Keep `participants` usage only for computing the other user. Uses shadcn-ui ScrollArea for list scrolling; verify the component's usage instructions before implementing."
+          "description": "Harden authenticated actor initialization by making admin-token initialization optional: only call the authorization component’s `_initializeAccessControlWithSecret` when `getSecretParameter('caffeineAdminToken')` returns a non-empty, trimmed token; never pass an empty string. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/features/chat/MessageThread.tsx",
+          "path": "frontend/src/hooks/useLocalActor.ts",
           "operation": "modify",
-          "description": "Remove reliance on parsing `conversationId` with `split('-')` to derive the other user. Resolve the active conversation's participants from fetched conversation metadata (e.g., via the existing conversations query) and derive the other participant principal from that metadata so it works with canonical IDs. Uses shadcn-ui ScrollArea for thread scrolling; verify the component's usage instructions before implementing."
+          "description": "Treat admin-token initialization as optional and non-fatal for missing/empty tokens, but convert invalid-token failures into a clean `initError` state: when `_initializeAccessControlWithSecret` rejects, set `initError` to a sanitized Error (no secrets) and ensure `actor` is cleared so the app reliably renders InitErrorScreen. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/hooks/useQueries.ts",
+          "path": "frontend/src/features/init/sanitizeInitError.ts",
           "operation": "modify",
-          "description": "Ensure any chat-related hooks and query keys consistently treat `ConversationId` as an opaque canonical id (no string composition assumptions) and that call sites can access `ConversationMetadata.conversationId` for UI state."
+          "description": "Add a reusable sanitization helper that can produce a safe Error object/message for storing in init state (redacting tokens/secrets), so hooks can set `initError` without leaking sensitive values. Verify the component's usage instructions before implementing."
+        }
+      ]
+    },
+    {
+      "id": "REQ-2",
+      "summary": "Improve InitErrorScreen messaging and recovery flows for authorization/token vs network initialization failures.",
+      "acceptanceCriteria": [
+        "InitErrorScreen displays an English summary that distinguishes authorization/token failures from network failures using the existing `sanitizeInitError` mechanism.",
+        "If the sanitized error indicates authorization failure, the screen includes user-facing guidance in English (e.g., that access is not authorized and the user may need to retry or reset local data) without exposing any secrets.",
+        "Retry and Reset actions remain functional and do not leave the app stuck on an indefinite “Initializing...” state."
+      ],
+      "file_operations": [
+        {
+          "path": "frontend/src/features/init/sanitizeInitError.ts",
+          "operation": "modify",
+          "description": "Extend `sanitizeInitError` to return an explicit, frontend-usable classification (e.g., `kind: 'authorization' | 'network' | 'timeout' | 'unknown'`) derived from the sanitized message, while keeping summaries/technical details secret-safe. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/features/init/InitErrorScreen.tsx",
+          "operation": "modify",
+          "description": "Update the InitErrorScreen UI (using existing shadcn-ui components like Card/Alert/Collapsible/Button) to (1) show an English summary that clearly differentiates authorization/token failures vs network failures via the enhanced `sanitizeInitError`, and (2) conditionally render additional English guidance for authorization/token failures (retry/reset suggestions) without exposing secrets. Verify the component's usage instructions before implementing."
+        },
+        {
+          "path": "frontend/src/App.tsx",
+          "operation": "modify",
+          "description": "Ensure Retry/Reset flows can always transition out of the loading state by keeping `isRetrying` strictly tied to the async handlers and relying on `useLocalActor` to set `isFetching`/`initError` deterministically after retries/resets (no indefinite “Initializing...” regressions). Verify the component's usage instructions before implementing."
         }
       ]
     },
     {
       "id": "REQ-3",
-      "summary": "Implement reliable auto-scroll to the latest message by scrolling the actual ScrollArea viewport when new messages arrive (including via polling).",
+      "summary": "Use a permissionless health-check during initialization to distinguish unreachable-canister failures from authorization/token failures.",
       "acceptanceCriteria": [
-        "When a new message arrives in an open conversation, the message thread scrolls to reveal the latest message automatically.",
-        "Auto-scroll works consistently with the current ScrollArea-based layout (i.e., it scrolls the visible viewport, not a non-scrollable inner div).",
-        "Auto-scroll does not throw errors when there are zero messages or during loading transitions."
+        "Backend exposes a new query method (e.g., `health()`/`ping()`) that returns a simple value and does not require `#user` permission.",
+        "`useLocalActor` (or the main initialization flow in `App.tsx`) calls the health-check after actor creation and surfaces failures via `initError` so the InitErrorScreen appears instead of the UI proceeding into broken/unauthorized states.",
+        "With the canister reachable, initialization proceeds past the loading screen; with the canister unreachable, the user sees InitErrorScreen with a network-related summary."
       ],
       "file_operations": [
         {
-          "path": "frontend/src/features/chat/MessageThread.tsx",
+          "path": "frontend/src/hooks/useLocalActor.ts",
           "operation": "modify",
-          "description": "Rework auto-scroll to target the ScrollArea's scrollable viewport (not the inner content wrapper). Implement a safe scroll-to-bottom routine triggered on new messages (and after loading transitions), guarding against empty state and missing refs. Uses shadcn-ui ScrollArea; verify the component's usage instructions before implementing."
+          "description": "After `createActorWithConfig` returns, call the backend health-check capability (`actor.checkHealth()` per `frontend/src/backend.d.ts`) before attempting any token-based access-control initialization; on failure, set `initError` (sanitized) so InitErrorScreen shows a network-related summary; on success, proceed with optional admin-token initialization and then set `actor`. Verify the component's usage instructions before implementing."
         },
         {
-          "path": "frontend/src/features/chat/useMessagePolling.ts",
+          "path": "frontend/src/features/init/sanitizeInitError.ts",
           "operation": "modify",
-          "description": "Ensure polling-triggered message refreshes reliably trigger the auto-scroll behavior in the open thread (without adding new routes). Keep invalidations consistent with canonical conversationId usage."
-        }
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "summary": "Show user-friendly English start-chat failure errors reflecting backend failure reasons (e.g., must be friends) with a generic fallback.",
-      "acceptanceCriteria": [
-        "If startConversation fails due to friendship not being accepted, the toast/error displayed to the user clearly states they must be friends to chat (in English).",
-        "Generic fallback error remains for unexpected failures."
-      ],
-      "file_operations": [
-        {
-          "path": "frontend/src/features/chat/NewChatDialog.tsx",
-          "operation": "modify",
-          "description": "Improve startConversation error handling by mapping known backend failure messages to clear English toasts (e.g., \"You must be friends to start a chat.\") and keeping a generic fallback for unknown errors. Uses shadcn-ui Dialog/Input/Button components; verify the component's usage instructions before implementing."
-        },
-        {
-          "path": "frontend/src/hooks/useQueries.ts",
-          "operation": "modify",
-          "description": "Optionally normalize startConversation error propagation (without changing authentication) so UI can reliably read backend error messages and decide whether to show a friend-required message vs a generic fallback."
+          "description": "Map health-check failures into the network-related classification/summary path (via sanitized message matching), so the InitErrorScreen reliably shows a network-related summary when the canister is unreachable. Verify the component's usage instructions before implementing."
         }
       ]
     }

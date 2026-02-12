@@ -147,6 +147,13 @@ export enum CallStatus {
     ended = "ended",
     inProgress = "inProgress"
 }
+export enum FriendshipStatus {
+    blocked = "blocked",
+    pendingOutgoing = "pendingOutgoing",
+    notFriends = "notFriends",
+    friends = "friends",
+    pendingIncoming = "pendingIncoming"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -164,6 +171,9 @@ export interface backendInterface {
     answerCall(callId: CallId, answer: string): Promise<CallSession>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     blockUser(other: Principal): Promise<void>;
+    checkHealth(): Promise<{
+        status: string;
+    }>;
     declineFriendRequest(other: Principal): Promise<void>;
     deleteConversation(conversationId: ConversationId): Promise<void>;
     getCallSession(callId: CallId): Promise<CallSession | null>;
@@ -171,10 +181,12 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getConversations(): Promise<Array<ConversationMetadata>>;
     getCurrentUser(): Promise<InternalUserProfile | null>;
+    getFriendCommand(target: Principal): Promise<string>;
     getFriends(): Promise<Array<Principal>>;
     getMessages(conversationId: ConversationId): Promise<Array<Message>>;
     getPendingFriendRequests(): Promise<Array<Principal>>;
     getPendingIncomingCalls(): Promise<Array<CallSession>>;
+    getRelationshipStatus(other: Principal): Promise<FriendshipStatus>;
     getUnreadConversations(): Promise<Array<ConversationId>>;
     getUser(principal: Principal): Promise<InternalUserProfile | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -190,7 +202,7 @@ export interface backendInterface {
     updateCallStatus(callId: CallId, newStatus: CallStatus): Promise<CallSession>;
     updateDisplayName(newDisplayName: string): Promise<InternalUserProfile>;
 }
-import type { CallId as _CallId, CallKind as _CallKind, CallSession as _CallSession, CallStatus as _CallStatus, ConversationMetadata as _ConversationMetadata, ExternalBlob as _ExternalBlob, InternalUserProfile as _InternalUserProfile, Message as _Message, Timestamp as _Timestamp, UserId as _UserId, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { CallId as _CallId, CallKind as _CallKind, CallSession as _CallSession, CallStatus as _CallStatus, ConversationMetadata as _ConversationMetadata, ExternalBlob as _ExternalBlob, FriendshipStatus as _FriendshipStatus, InternalUserProfile as _InternalUserProfile, Message as _Message, Timestamp as _Timestamp, UserId as _UserId, UserProfile as _UserProfile, UserRole as _UserRole, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -347,6 +359,22 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async checkHealth(): Promise<{
+        status: string;
+    }> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.checkHealth();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.checkHealth();
+            return result;
+        }
+    }
     async declineFriendRequest(arg0: Principal): Promise<void> {
         if (this.processError) {
             try {
@@ -445,6 +473,20 @@ export class Backend implements backendInterface {
             return from_candid_opt_n30(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getFriendCommand(arg0: Principal): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getFriendCommand(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getFriendCommand(arg0);
+            return result;
+        }
+    }
     async getFriends(): Promise<Array<Principal>> {
         if (this.processError) {
             try {
@@ -499,6 +541,20 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.getPendingIncomingCalls();
             return from_candid_vec_n32(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getRelationshipStatus(arg0: Principal): Promise<FriendshipStatus> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getRelationshipStatus(arg0);
+                return from_candid_FriendshipStatus_n33(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getRelationshipStatus(arg0);
+            return from_candid_FriendshipStatus_n33(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUnreadConversations(): Promise<Array<ConversationId>> {
@@ -630,28 +686,28 @@ export class Backend implements backendInterface {
     async sendMessage(arg0: ConversationId, arg1: string, arg2: ExternalBlob | null): Promise<Message> {
         if (this.processError) {
             try {
-                const result = await this.actor.sendMessage(arg0, arg1, await to_candid_opt_n33(this._uploadFile, this._downloadFile, arg2));
+                const result = await this.actor.sendMessage(arg0, arg1, await to_candid_opt_n35(this._uploadFile, this._downloadFile, arg2));
                 return from_candid_Message_n26(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.sendMessage(arg0, arg1, await to_candid_opt_n33(this._uploadFile, this._downloadFile, arg2));
+            const result = await this.actor.sendMessage(arg0, arg1, await to_candid_opt_n35(this._uploadFile, this._downloadFile, arg2));
             return from_candid_Message_n26(this._uploadFile, this._downloadFile, result);
         }
     }
     async startCall(arg0: UserId, arg1: CallKind, arg2: string): Promise<CallSession> {
         if (this.processError) {
             try {
-                const result = await this.actor.startCall(arg0, to_candid_CallKind_n35(this._uploadFile, this._downloadFile, arg1), arg2);
+                const result = await this.actor.startCall(arg0, to_candid_CallKind_n37(this._uploadFile, this._downloadFile, arg1), arg2);
                 return from_candid_CallSession_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.startCall(arg0, to_candid_CallKind_n35(this._uploadFile, this._downloadFile, arg1), arg2);
+            const result = await this.actor.startCall(arg0, to_candid_CallKind_n37(this._uploadFile, this._downloadFile, arg1), arg2);
             return from_candid_CallSession_n8(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -672,14 +728,14 @@ export class Backend implements backendInterface {
     async updateCallStatus(arg0: CallId, arg1: CallStatus): Promise<CallSession> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateCallStatus(arg0, to_candid_CallStatus_n37(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.updateCallStatus(arg0, to_candid_CallStatus_n39(this._uploadFile, this._downloadFile, arg1));
                 return from_candid_CallSession_n8(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateCallStatus(arg0, to_candid_CallStatus_n37(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.updateCallStatus(arg0, to_candid_CallStatus_n39(this._uploadFile, this._downloadFile, arg1));
             return from_candid_CallSession_n8(this._uploadFile, this._downloadFile, result);
         }
     }
@@ -712,6 +768,9 @@ async function from_candid_ConversationMetadata_n23(_uploadFile: (file: External
 }
 async function from_candid_ExternalBlob_n29(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
+}
+function from_candid_FriendshipStatus_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _FriendshipStatus): FriendshipStatus {
+    return from_candid_variant_n34(_uploadFile, _downloadFile, value);
 }
 async function from_candid_Message_n26(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Message): Promise<Message> {
     return await from_candid_record_n27(_uploadFile, _downloadFile, value);
@@ -865,6 +924,19 @@ function from_candid_variant_n21(_uploadFile: (file: ExternalBlob) => Promise<Ui
 }): UserRole {
     return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
 }
+function from_candid_variant_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    blocked: null;
+} | {
+    pendingOutgoing: null;
+} | {
+    notFriends: null;
+} | {
+    friends: null;
+} | {
+    pendingIncoming: null;
+}): FriendshipStatus {
+    return "blocked" in value ? FriendshipStatus.blocked : "pendingOutgoing" in value ? FriendshipStatus.pendingOutgoing : "notFriends" in value ? FriendshipStatus.notFriends : "friends" in value ? FriendshipStatus.friends : "pendingIncoming" in value ? FriendshipStatus.pendingIncoming : value;
+}
 async function from_candid_vec_n22(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_ConversationMetadata>): Promise<Array<ConversationMetadata>> {
     return await Promise.all(value.map(async (x)=>await from_candid_ConversationMetadata_n23(_uploadFile, _downloadFile, x)));
 }
@@ -874,13 +946,13 @@ async function from_candid_vec_n31(_uploadFile: (file: ExternalBlob) => Promise<
 function from_candid_vec_n32(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_CallSession>): Array<CallSession> {
     return value.map((x)=>from_candid_CallSession_n8(_uploadFile, _downloadFile, x));
 }
-function to_candid_CallKind_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallKind): _CallKind {
-    return to_candid_variant_n36(_uploadFile, _downloadFile, value);
-}
-function to_candid_CallStatus_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallStatus): _CallStatus {
+function to_candid_CallKind_n37(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallKind): _CallKind {
     return to_candid_variant_n38(_uploadFile, _downloadFile, value);
 }
-async function to_candid_ExternalBlob_n34(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+function to_candid_CallStatus_n39(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallStatus): _CallStatus {
+    return to_candid_variant_n40(_uploadFile, _downloadFile, value);
+}
+async function to_candid_ExternalBlob_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid_UserRole_n16(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
@@ -892,8 +964,8 @@ function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: Exte
 function to_candid_opt_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation | null): [] | [__CaffeineStorageRefillInformation] {
     return value === null ? candid_none() : candid_some(to_candid__CaffeineStorageRefillInformation_n2(_uploadFile, _downloadFile, value));
 }
-async function to_candid_opt_n33(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob | null): Promise<[] | [_ExternalBlob]> {
-    return value === null ? candid_none() : candid_some(await to_candid_ExternalBlob_n34(_uploadFile, _downloadFile, value));
+async function to_candid_opt_n35(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob | null): Promise<[] | [_ExternalBlob]> {
+    return value === null ? candid_none() : candid_some(await to_candid_ExternalBlob_n36(_uploadFile, _downloadFile, value));
 }
 function to_candid_record_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     proposed_top_up_amount?: bigint;
@@ -919,7 +991,7 @@ function to_candid_variant_n17(_uploadFile: (file: ExternalBlob) => Promise<Uint
         guest: null
     } : value;
 }
-function to_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallKind): {
+function to_candid_variant_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallKind): {
     video: null;
 } | {
     voice: null;
@@ -930,7 +1002,7 @@ function to_candid_variant_n36(_uploadFile: (file: ExternalBlob) => Promise<Uint
         voice: null
     } : value;
 }
-function to_candid_variant_n38(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallStatus): {
+function to_candid_variant_n40(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: CallStatus): {
     ringing: null;
 } | {
     initiated: null;

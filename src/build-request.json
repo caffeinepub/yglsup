@@ -1,87 +1,73 @@
 {
   "kind": "build_request",
-  "title": "Fix chat start failures and auto-scroll to newest messages",
-  "priority": "normal",
+  "title": "Fix app startup “Initialization Failed” by hardening actor initialization and admin-token handling",
+  "priority": "high",
   "requirements": [
     {
       "id": "REQ-1",
-      "text": "Fix the “Failed to start chat / Failed to chat” issue by making conversation IDs consistent across backend and frontend: (a) update the backend ConversationMetadata returned by getConversations() to include the canonical conversation id field, and (b) update the frontend to use that id everywhere (selecting a conversation, fetching messages, unread checks), instead of reconstructing IDs from participants.",
-      "target": "both",
+      "text": "Prevent actor initialization from failing due to missing/empty or invalid admin token values by making admin-token initialization optional and non-fatal in all actor initialization paths.",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages-user-1"
         ],
         "quotes": [
-          "Hey When Cllick on chat after clicking on Add friend name It's showing Failed to chat problem solve it"
+          "Initialisation failed fix"
         ]
       },
       "acceptanceCriteria": [
-        "Backend getConversations() returns metadata that includes the canonical conversationId used as the key in the conversations map.",
-        "Frontend no longer builds conversationId strings via `${user1}-${user2}`; it uses the id from backend metadata for selection, unread status checks, delete, and message fetching.",
-        "Selecting a conversation from the list reliably loads messages (no 'Conversation not found' traps) regardless of principal ordering.",
-        "Unread badge status matches backend getUnreadConversations() results."
+        "When no caffeineAdminToken is present, the app does not throw during actor initialization.",
+        "When caffeineAdminToken is present but invalid, the app shows a clear error state (InitErrorScreen) instead of hanging or crashing.",
+        "`frontend/src/hooks/useActor.ts` no longer calls `_initializeAccessControlWithSecret` with an empty string token.",
+        "`frontend/src/hooks/useLocalActor.ts` treats `_initializeAccessControlWithSecret` errors as initialization errors with a sanitized message."
       ]
     },
     {
       "id": "REQ-2",
-      "text": "Prevent startConversation from deleting/resetting an existing conversation: if a conversation already exists for the two users, return the existing conversationId without overwriting the stored conversation record/messages/lastSeen.",
-      "target": "backend",
+      "text": "Improve the initialization error UX so the user can reliably recover from initialization failures caused by authorization/token issues (and not just generic network errors).",
+      "target": "frontend",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages-user-1"
         ],
         "quotes": [
-          "When Cllick on chat after clicking on Add friend name It's showing Failed to chat problem solve it"
+          "Initialisation failed fix"
         ]
       },
       "acceptanceCriteria": [
-        "Calling startConversation() multiple times for the same pair of users does not clear previous messages or lastSeen state.",
-        "Starting a chat with a user you already have a conversation with consistently returns the same conversationId and preserves history."
+        "InitErrorScreen displays an English summary that distinguishes authorization/token failures from network failures using the existing `sanitizeInitError` mechanism.",
+        "If the sanitized error indicates authorization failure, the screen includes user-facing guidance in English (e.g., that access is not authorized and the user may need to retry or reset local data) without exposing any secrets.",
+        "Retry and Reset actions remain functional and do not leave the app stuck on an indefinite “Initializing...” state."
       ]
     },
     {
       "id": "REQ-3",
-      "text": "Implement reliable automatic scrolling to the latest message in the chat thread when new messages arrive (including messages received via polling). Ensure the scroll is applied to the actual scrollable viewport used by the ScrollArea component.",
-      "target": "frontend",
+      "text": "Add a lightweight backend health-check method that does not require user permissions, and use it during frontend initialization to detect unreachable-canister vs authorization failures more accurately.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-1"
+          "recent-messages-user-1"
         ],
         "quotes": [
-          "Another problem while chatting when new Message comes then automatically Scroll screen to new messages"
+          "Initialisation failed fix"
         ]
       },
       "acceptanceCriteria": [
-        "When a new message arrives in an open conversation, the message thread scrolls to reveal the latest message automatically.",
-        "Auto-scroll works consistently with the current ScrollArea-based layout (i.e., it scrolls the visible viewport, not a non-scrollable inner div).",
-        "Auto-scroll does not throw errors when there are zero messages or during loading transitions."
-      ]
-    },
-    {
-      "id": "REQ-4",
-      "text": "Improve the user-facing error shown when starting a chat fails so it reflects backend failure reasons (e.g., “Can only start conversations with friends”) instead of only showing a generic “Failed to start conversation”. All user-facing text must be English.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-1"
-        ],
-        "quotes": [
-          "It's showing Failed to chat problem solve it"
-        ]
-      },
-      "acceptanceCriteria": [
-        "If startConversation fails due to friendship not being accepted, the toast/error displayed to the user clearly states they must be friends to chat (in English).",
-        "Generic fallback error remains for unexpected failures."
+        "Backend exposes a new query method (e.g., `health()`/`ping()`) that returns a simple value and does not require `#user` permission.",
+        "`useLocalActor` (or the main initialization flow in `App.tsx`) calls the health-check after actor creation and surfaces failures via `initError` so the InitErrorScreen appears instead of the UI proceeding into broken/unauthorized states.",
+        "With the canister reachable, initialization proceeds past the loading screen; with the canister unreachable, the user sees InitErrorScreen with a network-related summary."
       ]
     }
   ],
   "constraints": [
-    "Backend must remain a single Motoko actor in backend/main.mo; only add/adjust backend/migration.mo if state migration is strictly required.",
-    "Do not edit files under frontend/src/components/ui or any paths listed in frontend.immutablePaths (compose them instead)."
+    "Do not edit files under `frontend/src/components/ui` (read-only).",
+    "Do not edit immutable hook files listed by the platform (e.g., `frontend/src/hooks/useInternetIdentity.ts(x)`, `frontend/src/hooks/useActor.ts` is editable, but do not modify any paths listed as immutable in SYSTEM_CONTEXT).",
+    "Keep all Motoko logic in the single actor `backend/main.mo`; only add a migration file if persistent state schema changes."
   ],
   "nonGoals": [
-    "Do not implement WhatsApp-like Status/Stories, story privacy controls, or any new social feed features in this change set.",
-    "Do not change authentication mechanisms (Internet Identity/local identity) as part of these fixes."
+    "Adding third-party authentication providers (only Internet Identity is allowed).",
+    "Adding external databases or non-IC backend services.",
+    "Implementing real-time messaging via WebSockets."
   ],
   "imageRequirements": {
     "required": [],

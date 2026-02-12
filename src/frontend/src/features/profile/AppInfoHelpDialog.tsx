@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Copy, Check, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -7,67 +8,63 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Copy, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import { BUILD_ID } from '../../constants/buildInfo';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface AppInfoHelpDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initDiagnostics?: {
+    lastInitError?: string;
+  };
 }
 
-export default function AppInfoHelpDialog({ open, onOpenChange }: AppInfoHelpDialogProps) {
+export function AppInfoHelpDialog({ open, onOpenChange, initDiagnostics }: AppInfoHelpDialogProps) {
   const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState<string | null>(null);
-
-  const currentUrl = typeof window !== 'undefined' ? window.location.href : '';
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const appUrl = window.location.origin;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(currentUrl);
+      await navigator.clipboard.writeText(appUrl);
       setCopied(true);
-      setCopyError(null);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      setCopyError('Failed to copy. Please select and copy manually.');
-      console.error('Copy failed:', err);
+    } catch (error) {
+      console.error('Failed to copy URL:', error);
     }
   };
 
-  const handleReloadWithCacheBuster = () => {
+  const handleHardRefresh = () => {
+    // Add cache-busting parameter
     const url = new URL(window.location.href);
-    url.searchParams.set('v', Date.now().toString());
+    url.searchParams.set('_refresh', Date.now().toString());
     window.location.href = url.toString();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>App Info & Help</DialogTitle>
           <DialogDescription>
-            View your current app URL and troubleshoot update issues.
+            Information about this application and troubleshooting options
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Current URL Section */}
+        <div className="space-y-4">
+          {/* App URL */}
           <div className="space-y-2">
-            <Label htmlFor="current-url">Current App URL</Label>
-            <div className="flex gap-2">
-              <Input
-                id="current-url"
-                value={currentUrl}
-                readOnly
-                className="flex-1 font-mono text-xs"
-              />
+            <h4 className="text-sm font-medium">App URL</h4>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 rounded bg-muted px-3 py-2 text-xs break-all">
+                {appUrl}
+              </code>
               <Button
                 size="icon"
                 variant="outline"
                 onClick={handleCopy}
-                title="Copy URL"
+                className="shrink-0"
               >
                 {copied ? (
                   <Check className="h-4 w-4 text-green-600" />
@@ -76,52 +73,74 @@ export default function AppInfoHelpDialog({ open, onOpenChange }: AppInfoHelpDia
                 )}
               </Button>
             </div>
-            {copyError && (
-              <div className="flex items-start gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>{copyError}</span>
-              </div>
-            )}
           </div>
 
           <Separator />
 
-          {/* Not Updated Section */}
-          <div className="space-y-3">
-            <div>
-              <h4 className="font-semibold text-sm mb-1">Not seeing updates?</h4>
-              <p className="text-sm text-muted-foreground">
-                Your browser may be showing a cached version. Try these steps:
-              </p>
-            </div>
-
-            <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
-              <p className="font-medium">Hard Refresh Instructions:</p>
-              <ul className="list-disc list-inside space-y-1 text-muted-foreground ml-2">
-                <li><strong>Windows/Linux:</strong> Press Ctrl + Shift + R or Ctrl + F5</li>
-                <li><strong>Mac:</strong> Press Cmd + Shift + R or Cmd + Option + R</li>
-                <li><strong>Mobile:</strong> Close the tab completely and reopen</li>
-              </ul>
-            </div>
-
-            <Button
-              onClick={handleReloadWithCacheBuster}
-              variant="outline"
-              className="w-full"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Reload with Cache-Buster
-            </Button>
-          </div>
-
-          <Separator />
-
-          {/* Build Info Section */}
-          <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Build Identifier</Label>
-            <p className="font-mono text-xs bg-muted/50 rounded px-2 py-1.5">
-              {BUILD_ID}
+          {/* Build Info */}
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium">Build Information</h4>
+            <p className="text-xs text-muted-foreground">
+              Build ID: <code className="rounded bg-muted px-1 py-0.5">{BUILD_ID}</code>
             </p>
+          </div>
+
+          {/* Initialization Diagnostics (if provided) */}
+          {initDiagnostics?.lastInitError && (
+            <>
+              <Separator />
+              <Collapsible open={showDiagnostics} onOpenChange={setShowDiagnostics}>
+                <div className="space-y-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-full justify-between">
+                      <span className="text-sm font-medium">Initialization Diagnostics</span>
+                      {showDiagnostics ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="rounded-md bg-muted p-3 text-xs font-mono break-all">
+                      {initDiagnostics.lastInitError}
+                    </div>
+                  </CollapsibleContent>
+                </div>
+              </Collapsible>
+            </>
+          )}
+
+          <Separator />
+
+          {/* Troubleshooting */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Troubleshooting</h4>
+            
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                If you're experiencing issues or not seeing the latest updates:
+              </p>
+
+              <Button
+                onClick={handleHardRefresh}
+                variant="outline"
+                size="sm"
+                className="w-full"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Hard Refresh (Clear Cache)
+              </Button>
+
+              <div className="rounded-md bg-muted p-3 space-y-2 text-xs">
+                <p className="font-medium">Manual refresh instructions:</p>
+                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
+                  <li><strong>Windows/Linux:</strong> Ctrl + Shift + R or Ctrl + F5</li>
+                  <li><strong>Mac:</strong> Cmd + Shift + R</li>
+                  <li><strong>Mobile:</strong> Clear browser cache in settings</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>

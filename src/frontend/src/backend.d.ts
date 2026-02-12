@@ -61,6 +61,13 @@ export enum CallStatus {
     ended = "ended",
     inProgress = "inProgress"
 }
+export enum FriendshipStatus {
+    blocked = "blocked",
+    pendingOutgoing = "pendingOutgoing",
+    notFriends = "notFriends",
+    friends = "friends",
+    pendingIncoming = "pendingIncoming"
+}
 export enum UserRole {
     admin = "admin",
     user = "user",
@@ -71,6 +78,9 @@ export interface backendInterface {
     answerCall(callId: CallId, answer: string): Promise<CallSession>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     blockUser(other: Principal): Promise<void>;
+    checkHealth(): Promise<{
+        status: string;
+    }>;
     declineFriendRequest(other: Principal): Promise<void>;
     deleteConversation(conversationId: ConversationId): Promise<void>;
     getCallSession(callId: CallId): Promise<CallSession | null>;
@@ -78,10 +88,12 @@ export interface backendInterface {
     getCallerUserRole(): Promise<UserRole>;
     getConversations(): Promise<Array<ConversationMetadata>>;
     getCurrentUser(): Promise<InternalUserProfile | null>;
+    getFriendCommand(target: Principal): Promise<string>;
     getFriends(): Promise<Array<Principal>>;
     getMessages(conversationId: ConversationId): Promise<Array<Message>>;
     getPendingFriendRequests(): Promise<Array<Principal>>;
     getPendingIncomingCalls(): Promise<Array<CallSession>>;
+    getRelationshipStatus(other: Principal): Promise<FriendshipStatus>;
     getUnreadConversations(): Promise<Array<ConversationId>>;
     getUser(principal: Principal): Promise<InternalUserProfile | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;

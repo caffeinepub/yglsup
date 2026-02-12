@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Fix chat start failures by using a consistent canonical conversation ID across backend and frontend, prevent existing chats from being reset, and ensure chat threads auto-scroll to the newest message with clearer English error messages.
+**Goal:** Fix app startup “Initialization Failed” by making admin-token handling non-fatal during actor initialization, improving init error recovery UX, and adding a permissionless backend health-check to better distinguish network vs authorization failures.
 
 **Planned changes:**
-- Backend: Update `getConversations()` to return conversation metadata that includes the canonical `conversationId` used as the key in stored conversation records.
-- Frontend: Stop reconstructing conversation IDs from participant pairs; use the backend-provided `conversationId` for conversation selection, message fetching, unread status checks, and related operations.
-- Backend: Update `startConversation()` so that if a conversation already exists for two users, it returns the existing `conversationId` without overwriting stored conversation data (messages/lastSeen).
-- Frontend: Implement reliable auto-scroll to the latest message when new messages arrive (including via polling), scrolling the actual `ScrollArea` viewport.
-- Frontend: Improve chat start failure errors to reflect backend failure reasons (e.g., “You must be friends to chat”), with an English generic fallback for unexpected failures.
+- Update frontend actor initialization to treat missing/empty admin token as optional and avoid calling `_initializeAccessControlWithSecret` with an empty string.
+- Update local actor initialization to surface `_initializeAccessControlWithSecret` failures as initialization errors using sanitized messages, so the app shows `InitErrorScreen` rather than hanging/crashing.
+- Improve `InitErrorScreen` messaging to distinguish authorization/token failures vs network failures (via existing `sanitizeInitError`) and provide safe user guidance for authorization-related issues; keep Retry/Reset working without getting stuck on “Initializing...”.
+- Add a lightweight backend query health-check method (e.g., `health()`/`ping()`) that requires no user permission, and call it during frontend initialization to detect unreachable-canister conditions and route failures into `initError`.
 
-**User-visible outcome:** Users can consistently open existing chats without “Failed to chat/start conversation” errors, chat history is preserved when re-starting a chat with the same user, incoming/new messages automatically scroll into view, and chat start errors display clearer English reasons when applicable.
+**User-visible outcome:** The app starts reliably even without an admin token; when initialization fails, users see a clear error screen that differentiates authorization/token issues from network reachability issues and can recover using Retry or Reset without being stuck on an indefinite loading state.

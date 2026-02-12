@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { LogOut, User, Info } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,16 +9,22 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Edit, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import ChangeDisplayNameDialog from './ChangeDisplayNameDialog';
-import AppInfoHelpDialog from './AppInfoHelpDialog';
-import type { InternalUserProfile } from '../../backend';
+import { AppInfoHelpDialog } from './AppInfoHelpDialog';
+import type { Principal } from '@icp-sdk/core/principal';
 
 interface ProfileMenuProps {
-  currentUser: InternalUserProfile;
+  currentUser: {
+    principal: Principal;
+    displayName: string;
+  };
+  initDiagnostics?: {
+    lastInitError?: string;
+  };
 }
 
-export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
+export default function ProfileMenu({ currentUser, initDiagnostics }: ProfileMenuProps) {
   const [showChangeNameDialog, setShowChangeNameDialog] = useState(false);
   const [showAppInfoDialog, setShowAppInfoDialog] = useState(false);
 
@@ -34,33 +40,44 @@ export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-            <Avatar className="h-10 w-10 border-2 border-white/30">
-              <AvatarFallback className="bg-white/20 text-white font-semibold">
+            <Avatar className="h-10 w-10">
+              <AvatarFallback className="bg-emerald-600 text-white">
                 {initials}
               </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end">
-          <DropdownMenuLabel>
+        <DropdownMenuContent className="w-56" align="end" forceMount>
+          <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium">{currentUser.displayName}</p>
-              <p className="text-xs text-muted-foreground">Your Profile</p>
+              <p className="text-sm font-medium leading-none">
+                {currentUser.displayName}
+              </p>
+              <p className="text-xs leading-none text-muted-foreground truncate">
+                {currentUser.principal.toString().slice(0, 20)}...
+              </p>
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setShowChangeNameDialog(true)}>
-            <Edit className="mr-2 h-4 w-4" />
-            Change Display Name
-          </DropdownMenuItem>
-          <DropdownMenuItem disabled>
             <User className="mr-2 h-4 w-4" />
-            Profile Settings
+            <span>Change Display Name</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setShowAppInfoDialog(true)}>
+            <Info className="mr-2 h-4 w-4" />
+            <span>App Info & Help</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => setShowAppInfoDialog(true)}>
-            <HelpCircle className="mr-2 h-4 w-4" />
-            App Info / Help
+          <DropdownMenuItem
+            onClick={() => {
+              // Clear all local data and reload
+              localStorage.clear();
+              sessionStorage.clear();
+              window.location.reload();
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign Out</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -74,6 +91,7 @@ export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
       <AppInfoHelpDialog
         open={showAppInfoDialog}
         onOpenChange={setShowAppInfoDialog}
+        initDiagnostics={initDiagnostics}
       />
     </>
   );

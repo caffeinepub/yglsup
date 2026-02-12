@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalActor } from './useLocalActor';
 import { Principal } from '@icp-sdk/core/principal';
-import { ExternalBlob, CallStatus, CallKind } from '../backend';
+import { ExternalBlob, CallStatus, CallKind, FriendshipStatus } from '../backend';
 import type { ConversationMetadata, Message, InternalUserProfile, ConversationId, CallSession, CallId } from '../backend';
 
 export function useConversations() {
@@ -232,5 +232,97 @@ export function useGetCallSession(callId: CallId | null) {
     },
     enabled: !!actor && !isFetching && !!callId,
     refetchInterval: 2000, // Poll every 2 seconds during active call
+  });
+}
+
+// Friendship-related queries and mutations
+
+export function useGetRelationshipStatus(otherPrincipal: Principal | null) {
+  const { actor, isFetching } = useLocalActor();
+
+  return useQuery<FriendshipStatus>({
+    queryKey: ['relationshipStatus', otherPrincipal?.toString()],
+    queryFn: async () => {
+      if (!actor || !otherPrincipal) return FriendshipStatus.notFriends;
+      try {
+        return await actor.getRelationshipStatus(otherPrincipal);
+      } catch (error) {
+        console.error('Failed to fetch relationship status:', error);
+        return FriendshipStatus.notFriends;
+      }
+    },
+    enabled: !!actor && !isFetching && !!otherPrincipal,
+  });
+}
+
+export function useSendFriendRequest() {
+  const { actor } = useLocalActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (otherPrincipal: Principal) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.sendFriendRequest(otherPrincipal);
+    },
+    onSuccess: (_, otherPrincipal) => {
+      // Invalidate relationship status for this user
+      queryClient.invalidateQueries({ queryKey: ['relationshipStatus', otherPrincipal.toString()] });
+      // Invalidate search results to update UI
+      queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
+    },
+  });
+}
+
+export function useAcceptFriendRequest() {
+  const { actor } = useLocalActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (otherPrincipal: Principal) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.acceptFriendRequest(otherPrincipal);
+    },
+    onSuccess: (_, otherPrincipal) => {
+      // Invalidate relationship status for this user
+      queryClient.invalidateQueries({ queryKey: ['relationshipStatus', otherPrincipal.toString()] });
+      // Invalidate pending friend requests list
+      queryClient.invalidateQueries({ queryKey: ['pendingFriendRequests'] });
+      // Invalidate search results to update UI
+      queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
+    },
+  });
+}
+
+export function useDeclineFriendRequest() {
+  const { actor } = useLocalActor();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (otherPrincipal: Principal) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.declineFriendRequest(otherPrincipal);
+    },
+    onSuccess: (_, otherPrincipal) => {
+      // Invalidate relationship status for this user
+      queryClient.invalidateQueries({ queryKey: ['relationshipStatus', otherPrincipal.toString()] });
+      // Invalidate pending friend requests list
+      queryClient.invalidateQueries({ queryKey: ['pendingFriendRequests'] });
+      // Invalidate search results to update UI
+      queryClient.invalidateQueries({ queryKey: ['searchUsers'] });
+    },
+  });
+}
+
+export function useGetPendingFriendRequests() {
+  const { actor, isFetching } = useLocalActor();
+
+  return useQuery<Principal[]>({
+    queryKey: ['pendingFriendRequests'],
+    queryFn: async () => {
+      if (!actor) return [];
+      return actor.getPendingFriendRequests();
+    },
+    enabled: !!actor && !isFetching,
+    refetchInterval: 5000, // Refresh every 5 seconds
   });
 }

@@ -1,67 +1,40 @@
 {
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
-  "summary": "Social/chat app with friend chat and WhatsApp-like Status/Stories (photos + up to 60s videos) including audience privacy controls.",
+  "summary": "New project",
   "architectural_notes": [],
   "known_issues": [
-    "Clicking Chat after selecting an added friend shows 'Failed to start chat' / 'Failed to chat'."
+    "App initialization fails (\"Initialisation failed\"); user requested a fix."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-fix-the-failed-to-start-chat-failed-to-chat-issue-by-making-conversation-ids-consistent-across-backend-and-frontend-a-update-the-backend-conversationmetadata-returned-by-getconversations-to-include-the-canonical-conversation-id-field-and-b-update-the-frontend-to-use-that-id-everywhere-selecting-a-conversation-fetching-messages-unread-checks-instead-of-reconstructing-ids-from-participants",
-      "title": "Fix the “Failed to start chat / Failed to chat” issue by making conversation IDs consistent across backend and frontend: (a) update the backend ConversationMetadata returned by getConversations() to include the canonical conversation id field, and (b) update the frontend to use that id everywhere (selecting a conversation, fetching messages, unread checks), instead of reconstructing IDs from participants.",
+      "id": "feature-prevent-actor-initialization-from-failing-due-to-missing-empty-or-invalid-admin-token-values-by-making-admin-token-initialization-optional-and-non-fatal-in-all-actor-initialization-paths",
+      "title": "Prevent actor initialization from failing due to missing/empty or invalid admin token values by making admin-token initialization optional and non-fatal in all actor initialization paths.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-reliable-automatic-scrolling-to-the-latest-message-in-the-chat-thread-when-new-messages-arrive-including-messages-received-via-polling-ensure-the-scroll-is-applied-to-the-actual-scrollable-viewport-used-by-the-scrollarea-component",
-      "title": "Implement reliable automatic scrolling to the latest message in the chat thread when new messages arrive (including messages received via polling). Ensure the scroll is applied to the actual scrollable viewport used by the ScrollArea component.",
+      "id": "feature-improve-the-initialization-error-ux-so-the-user-can-reliably-recover-from-initialization-failures-caused-by-authorization-token-issues-and-not-just-generic-network-errors",
+      "title": "Improve the initialization error UX so the user can reliably recover from initialization failures caused by authorization/token issues (and not just generic network errors).",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "version": 1
+    },
+    {
+      "id": "feature-add-a-lightweight-backend-health-check-method-that-does-not-require-user-permissions-and-use-it-during-frontend-initialization-to-detect-unreachable-canister-vs-authorization-failures-more-accurately",
+      "title": "Add a lightweight backend health-check method that does not require user permissions, and use it during frontend initialization to detect unreachable-canister vs authorization failures more accurately.",
       "reqIds": [
         "REQ-3"
       ],
       "version": 1
-    },
-    {
-      "id": "feature-improve-the-user-facing-error-shown-when-starting-a-chat-fails-so-it-reflects-backend-failure-reasons-e-g-can-only-start-conversations-with-friends-instead-of-only-showing-a-generic-failed-to-start-conversation-all-user-facing-text-must-be-english",
-      "title": "Improve the user-facing error shown when starting a chat fails so it reflects backend failure reasons (e.g., “Can only start conversations with friends”) instead of only showing a generic “Failed to start conversation”. All user-facing text must be English.",
-      "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
     }
   ],
-  "new_feature_requests": [
-    {
-      "id": "AR-1",
-      "summary": "Add WhatsApp-like Status/Stories: allow sharing photos and up to 60-second videos, viewable as stories.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-2",
-      "summary": "Add chat behavior: when a new message arrives, automatically scroll the chat screen to the latest message.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-3",
-      "summary": "Add privacy controls for Stories: let users choose who can see their stories (e.g., from their list).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Prevent startConversation from deleting/resetting an existing conversation: if a conversation already exists for the two users, return the existing conversationId without overwriting the stored conversation record/messages/lastSeen.",
-      "reqIds": [
-        "REQ-2"
-      ],
-      "status": "pending"
-    }
-  ],
-  "projectName": "Fix chat start failures and auto-scroll to newest messages",
+  "new_feature_requests": [],
+  "projectName": "Fix app startup “Initialization Failed” by hardening actor initialization and admin-token handling",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Phone, Mic, MicOff, Video, Minimize2, AlertCircle } from 'lucide-react';
+import { Phone, Mic, MicOff, Video, Minimize2, AlertCircle, Info } from 'lucide-react';
 import { useCall } from './CallProvider';
 import { useLocalMedia } from './useLocalMedia';
 import { useCallSignaling } from './useCallSignaling';
@@ -9,6 +9,7 @@ import { useUpdateCallStatus, useStartCall } from '../../hooks/useQueries';
 import { createPeerConnection, createOffer, addLocalStream, setupRemoteStream, setRemoteAnswer } from './webrtc';
 import { CallStatus, CallKind } from '../../backend';
 import { toast } from 'sonner';
+import CallDiagnostics from './CallDiagnostics';
 
 export default function CallScreen() {
   const { activeCall, isMuted, isMinimized, endCall, minimizeCall, toggleMute, updateCallStatus, updateCallId, setPeerConnection, peerConnection } = useCall();
@@ -19,6 +20,7 @@ export default function CallScreen() {
   const startCallMutation = useStartCall();
   const signalingSetupDoneRef = useRef(false);
   const [signalingError, setSignalingError] = useState<string | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const isVideoCall = activeCall?.kind === 'video';
   const isOutgoing = activeCall?.direction === 'outgoing';
@@ -78,6 +80,13 @@ export default function CallScreen() {
         // Update call ID in provider
         updateCallId(callSession.id);
 
+        // Update status to ringing once callId is assigned
+        updateCallStatus(CallStatus.ringing);
+        await updateCallStatusMutation.mutateAsync({
+          callId: callSession.id,
+          status: CallStatus.ringing,
+        });
+
         // Mark setup as done
         signalingSetupDoneRef.current = true;
       } catch (err: any) {
@@ -102,10 +111,6 @@ export default function CallScreen() {
           await setRemoteAnswer(peerConnection, callSession.answer);
           // Update status to in progress
           updateCallStatus(CallStatus.inProgress);
-          await updateCallStatusMutation.mutateAsync({
-            callId: activeCall.callId,
-            status: CallStatus.inProgress,
-          });
         }
       } catch (err: any) {
         console.error('Failed to apply answer:', err);
@@ -262,6 +267,30 @@ export default function CallScreen() {
             </div>
           </div>
         </div>
+
+        {/* Diagnostics toggle button */}
+        <div className="absolute top-4 right-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-10 w-10 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-white"
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+          >
+            <Info className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Diagnostics panel */}
+        {showDiagnostics && (
+          <CallDiagnostics
+            peerName={activeCall.peerName}
+            direction={activeCall.direction}
+            status={activeCall.status}
+            hasCallId={hasCallId}
+            signalingError={signalingError || signalingHookError || null}
+          />
+        )}
+
         <div className="p-6 bg-gray-900/95 backdrop-blur">
           <div className="flex items-center justify-center">
             <Button
@@ -325,6 +354,29 @@ export default function CallScreen() {
             <h2 className="text-2xl font-semibold text-white mb-2">{activeCall.peerName}</h2>
             <p className="text-white/70">{getCallStatusText()}</p>
           </div>
+        )}
+
+        {/* Diagnostics toggle button */}
+        <div className="absolute top-4 right-4">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-10 w-10 rounded-full bg-gray-800/50 hover:bg-gray-700/50 text-white"
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+          >
+            <Info className="h-5 w-5" />
+          </Button>
+        </div>
+
+        {/* Diagnostics panel */}
+        {showDiagnostics && (
+          <CallDiagnostics
+            peerName={activeCall.peerName}
+            direction={activeCall.direction}
+            status={activeCall.status}
+            hasCallId={hasCallId}
+            signalingError={signalingError || signalingHookError || null}
+          />
         )}
       </div>
 

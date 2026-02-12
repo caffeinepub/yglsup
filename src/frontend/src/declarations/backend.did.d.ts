@@ -38,6 +38,11 @@ export interface ConversationMetadata {
   'conversationId' : string,
 }
 export type ExternalBlob = Uint8Array;
+export type FriendshipStatus = { 'blocked' : null } |
+  { 'pendingOutgoing' : null } |
+  { 'notFriends' : null } |
+  { 'friends' : null } |
+  { 'pendingIncoming' : null };
 export interface InternalUserProfile {
   'principal' : Principal,
   'displayName' : string,
@@ -87,6 +92,7 @@ export interface _SERVICE {
   'answerCall' : ActorMethod<[CallId, string], CallSession>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'blockUser' : ActorMethod<[Principal], undefined>,
+  'checkHealth' : ActorMethod<[], { 'status' : string }>,
   'declineFriendRequest' : ActorMethod<[Principal], undefined>,
   'deleteConversation' : ActorMethod<[ConversationId], undefined>,
   'getCallSession' : ActorMethod<[CallId], [] | [CallSession]>,
@@ -94,10 +100,12 @@ export interface _SERVICE {
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getConversations' : ActorMethod<[], Array<ConversationMetadata>>,
   'getCurrentUser' : ActorMethod<[], [] | [InternalUserProfile]>,
+  'getFriendCommand' : ActorMethod<[Principal], string>,
   'getFriends' : ActorMethod<[], Array<Principal>>,
   'getMessages' : ActorMethod<[ConversationId], Array<Message>>,
   'getPendingFriendRequests' : ActorMethod<[], Array<Principal>>,
   'getPendingIncomingCalls' : ActorMethod<[], Array<CallSession>>,
+  'getRelationshipStatus' : ActorMethod<[Principal], FriendshipStatus>,
   'getUnreadConversations' : ActorMethod<[], Array<ConversationId>>,
   'getUser' : ActorMethod<[Principal], [] | [InternalUserProfile]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
