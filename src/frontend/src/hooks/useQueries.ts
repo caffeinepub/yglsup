@@ -137,78 +137,26 @@ export function useMarkAsRead() {
   });
 }
 
-// Friend request hooks
-export function useFriends() {
-  const { actor, isFetching } = useLocalActor();
-
-  return useQuery<Principal[]>({
-    queryKey: ['friends'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getFriends();
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function usePendingFriendRequests() {
-  const { actor, isFetching } = useLocalActor();
-
-  return useQuery<Principal[]>({
-    queryKey: ['pendingFriendRequests'],
-    queryFn: async () => {
-      if (!actor) return [];
-      return actor.getPendingFriendRequests();
-    },
-    enabled: !!actor && !isFetching,
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
-}
-
-export function useSendFriendRequest() {
+export function useDeleteConversation() {
   const { actor } = useLocalActor();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (target: Principal) => {
+    mutationFn: async (conversationId: ConversationId) => {
       if (!actor) throw new Error('Actor not initialized');
-      return actor.sendFriendRequest(target);
+      return actor.deleteConversation(conversationId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friends'] });
-      queryClient.invalidateQueries({ queryKey: ['pendingFriendRequests'] });
-    },
-  });
-}
-
-export function useAcceptFriendRequest() {
-  const { actor } = useLocalActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (requestor: Principal) => {
-      if (!actor) throw new Error('Actor not initialized');
-      return actor.acceptFriendRequest(requestor);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['friends'] });
-      queryClient.invalidateQueries({ queryKey: ['pendingFriendRequests'] });
+    onSuccess: (_, conversationId) => {
+      // Invalidate conversations list
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      // Invalidate unread conversations
+      queryClient.invalidateQueries({ queryKey: ['unreadConversations'] });
+      // Remove messages cache for deleted conversation
+      queryClient.removeQueries({ queryKey: ['messages', conversationId] });
     },
-  });
-}
-
-export function useDeclineFriendRequest() {
-  const { actor } = useLocalActor();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (requestor: Principal) => {
-      if (!actor) throw new Error('Actor not initialized');
-      return actor.declineFriendRequest(requestor);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['pendingFriendRequests'] });
+    onError: (error: any) => {
+      // Surface error to caller for toast rendering
+      throw error;
     },
   });
 }

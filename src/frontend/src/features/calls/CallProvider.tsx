@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
 import type { Principal } from '@icp-sdk/core/principal';
-import type { CallKind } from '../../backend';
+
+type CallKind = 'voice' | 'video';
 
 interface CallSession {
   callId: string;
@@ -41,6 +42,13 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isMuted, setIsMuted] = useState(false);
 
   const startCall = (peerId: Principal, peerName: string, kind: CallKind, callId: string) => {
+    // End any existing call first to ensure clean state
+    if (activeCall) {
+      setActiveCall(null);
+      setIsMinimized(false);
+      setIsMuted(false);
+    }
+    // Start new call
     setActiveCall({ callId, kind, peerId, peerName });
     setIsMinimized(false);
     setIsMuted(false);
@@ -53,19 +61,27 @@ export function CallProvider({ children }: CallProviderProps) {
   };
 
   const minimizeCall = () => {
-    setIsMinimized(true);
+    if (activeCall) {
+      setIsMinimized(true);
+    }
   };
 
   const restoreCall = () => {
-    setIsMinimized(false);
+    if (activeCall) {
+      setIsMinimized(false);
+    }
   };
 
   const toggleMute = () => {
-    setIsMuted((prev) => !prev);
+    if (activeCall) {
+      setIsMuted((prev) => !prev);
+    }
   };
 
   const setMutedValue = (muted: boolean) => {
-    setIsMuted(muted);
+    if (activeCall) {
+      setIsMuted(muted);
+    }
   };
 
   return (

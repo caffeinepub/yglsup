@@ -47,18 +47,18 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
   const [isAcquiring, setIsAcquiring] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const optionsRef = useRef(options);
-
-  // Track options changes
-  useEffect(() => {
-    optionsRef.current = options;
-  }, [options.audio, options.video]);
+  const cleanupInProgressRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
     let currentStream: MediaStream | null = null;
 
     const acquireMedia = async () => {
+      // Don't acquire if cleanup is in progress
+      if (cleanupInProgressRef.current) {
+        return;
+      }
+
       if (!options.audio && !options.video) {
         // Clean up if no media requested
         if (streamRef.current) {
@@ -67,6 +67,7 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
         }
         setStream(null);
         setError(null);
+        setIsAcquiring(false);
         return;
       }
 
@@ -81,21 +82,19 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
 
         currentStream = mediaStream;
 
-        if (mounted) {
+        if (mounted && !cleanupInProgressRef.current) {
           streamRef.current = mediaStream;
           setStream(mediaStream);
+          setIsAcquiring(false);
         } else {
-          // Component unmounted, clean up
+          // Component unmounted or cleanup started, clean up immediately
           mediaStream.getTracks().forEach((track) => track.stop());
         }
       } catch (err) {
-        if (mounted) {
+        if (mounted && !cleanupInProgressRef.current) {
           const errorMessage = normalizeMediaError(err);
           setError(errorMessage);
           console.error('Media acquisition error:', err);
-        }
-      } finally {
-        if (mounted) {
           setIsAcquiring(false);
         }
       }
@@ -105,6 +104,9 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
 
     return () => {
       mounted = false;
+      cleanupInProgressRef.current = true;
+      
+      // Clean up current stream
       if (currentStream) {
         currentStream.getTracks().forEach((track) => track.stop());
       }
@@ -112,6 +114,11 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
       }
+      
+      // Reset cleanup flag after a short delay
+      setTimeout(() => {
+        cleanupInProgressRef.current = false;
+      }, 100);
     };
   }, [options.audio, options.video]);
 
@@ -134,11 +141,15 @@ export function useLocalMedia(options: UseLocalMediaOptions): UseLocalMediaRetur
   };
 
   const cleanup = () => {
+    cleanupInProgressRef.current = true;
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       setStream(null);
     }
+    setTimeout(() => {
+      cleanupInProgressRef.current = false;
+    }, 100);
   };
 
   return {

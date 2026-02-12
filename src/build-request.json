@@ -1,113 +1,80 @@
 {
   "kind": "build_request",
-  "title": "Fix calling flow, add picture sharing, and add friend-request gating for chats",
-  "priority": "high",
+  "title": "Add conversation deletion and resolve call feature issues",
+  "priority": "normal",
   "requirements": [
     {
-      "id": "REQ-17",
-      "text": "Fix the in-app voice/video call option so that starting a call from a 1:1 conversation reliably opens the CallScreen, requests microphone/camera permissions as needed, and shows a clear in-UI error state when media permissions are denied or media acquisition fails.",
-      "target": "frontend",
-      "source": {
-        "messageIds": [
-          "msg-6"
-        ],
-        "quotes": [
-          "Call option not working"
-        ]
-      },
-      "acceptanceCriteria": [
-        "From MessageThread, tapping the voice call button opens the full-screen call UI and attempts to acquire microphone access.",
-        "From MessageThread, tapping the video call button opens the full-screen call UI and attempts to acquire microphone+camera access.",
-        "If getUserMedia fails (e.g., permission denied / no device), the call UI displays an English error message and provides a way to close/end the call without leaving the app in a stuck call state.",
-        "The call kind detection (voice vs video) is consistent across MessageThread/CallProvider/CallScreen so the correct media constraints are used.",
-        "Minimize/restore and mute/unmute continue to work after this fix."
-      ]
-    },
-    {
-      "id": "REQ-18",
-      "text": "Add an in-chat picture sharing option in 1:1 conversations: users can pick an image from their device, send it as a message, and recipients can view it inline in the message thread.",
+      "id": "REQ-1",
+      "text": "Add a delete-conversation capability so a user can delete a 1:1 chat with a person, removing the conversation (and its messages) from the conversation list.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "give option to share Pictures"
+          "Give option to delete person chat"
         ]
       },
       "acceptanceCriteria": [
-        "MessageComposer includes an image attachment control (file picker) that allows selecting common image types (e.g., PNG/JPEG/WebP).",
-        "Sending an image creates a new message that renders as an inline image bubble in MessageThread (with a sensible max width/height) and preserves existing text-message behavior.",
-        "Conversation list last-message preview gracefully handles image messages (e.g., shows a label like \"Photo\" instead of raw data).",
-        "Backend persists image messages in a way compatible with the current single-canister architecture (no external storage), and existing text messages remain readable after upgrade (include migration if required).",
-        "Users who are not participants in a conversation still cannot read/send messages (maintain existing access checks)."
+        "Backend exposes a new authenticated method that deletes a conversation by ConversationId and rejects callers who are not a participant.",
+        "Deleting a conversation removes it from subsequent getConversations() results and makes getMessages(conversationId) fail with a clear error (e.g., \"Conversation not found\").",
+        "Frontend provides a clear UI affordance to delete a conversation from the conversation list (e.g., a menu/action per conversation item) with a confirmation step in English (e.g., \"Delete chat? This will remove the conversation and messages.\").",
+        "After a successful deletion, the conversation list refreshes and if the deleted conversation was currently selected, the message thread view is cleared (no stale messages shown).",
+        "If deletion fails (unauthorized/not found), the UI shows an English error toast/message and does not remove the conversation locally."
       ]
     },
     {
-      "id": "REQ-19",
-      "text": "Implement a friend request system where users must send a friend request and the recipient must accept it before either user can start a chat, send messages, or initiate calls with the other user.",
+      "id": "REQ-2",
+      "text": "Fix all call-related issues by auditing and correcting the end-to-end call lifecycle (initiate, ringing/in-progress, minimize/restore, mute/unmute, and end) so calls do not get stuck, leak media devices, or leave the UI in an inconsistent state.",
       "target": "both",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "give option If someone have to 1st send friend request and then can start chatting if another one accepted in Request List"
+          "And fix all issue related to calls"
         ]
       },
       "acceptanceCriteria": [
-        "Backend provides operations to: send friend request, list incoming pending requests, accept/reject a request, and list friends (accepted relationships).",
-        "Backend enforces that startConversation, sendMessage, and initiateCall are only allowed between users with an accepted friend relationship; otherwise the call traps/returns an error (and the frontend shows an English error toast/message).",
-        "NewChatDialog no longer starts a conversation immediately for non-friends; instead it allows sending a friend request and clearly shows request status (e.g., \"Request sent\").",
-        "The UI includes a \"Requests\" view/list where a user can see incoming requests and accept/reject them; accepting enables chat creation with that user.",
-        "After accepting a request, the user can start/open a conversation with the friend without additional steps."
+        "Starting a voice call and a video call from the message thread reliably opens the full-screen call UI without throwing runtime errors.",
+        "Ending a call always stops and releases all acquired media tracks (microphone/camera) and returns the UI to the non-call state (no CallScreen, no CallChip).",
+        "Minimize/restore works consistently: minimizing shows CallChip; restoring hides CallChip and shows CallScreen; neither action causes duplicated media acquisition or multiple parallel streams.",
+        "Mute/unmute correctly affects the microphone track state for the current call and stays in sync between CallScreen and CallChip.",
+        "If media permissions are denied or devices are unavailable, the CallScreen shows a clear English error state and the user can end the call from that screen.",
+        "Backend call session state is consistent for both participants (no sessions stuck in #ringing/#inProgress after one side ends); ending a call transitions the session to an ended state and updates endTime.",
+        "Frontend handles backend call initiation failures (including friendship-related failures) with an English error toast and resets any “initiating call” loading state."
       ]
     },
     {
-      "id": "REQ-20",
-      "text": "Update YGLSUP branding assets to use the user-provided uploaded picture in the app as the primary logo/app icon, and render it wherever the app currently shows its generated branding images.",
-      "target": "frontend",
+      "id": "REQ-3",
+      "text": "Do not add any new friend-request feature or new friend-request UI entry points as part of this change set.",
+      "target": "both",
       "source": {
         "messageIds": [
-          "msg-6"
+          "msg-1"
         ],
         "quotes": [
-          "use this pic in app"
+          "Hey don't add friend request option now"
         ]
       },
       "acceptanceCriteria": [
-        "The uploaded image is converted into appropriately sized static assets placed under frontend/public/assets/generated and used as the app icon/logo in the UI in place of the previous generated branding images.",
-        "The updated assets render correctly on the name start/onboarding screen and in the main app header area (wherever branding is currently shown).",
-        "No branding images are served via the backend; all are loaded as frontend static assets."
+        "No new friend-request actions, dialogs, buttons, routes, or backend methods are introduced beyond what already exists.",
+        "Any changes made while implementing chat deletion or call fixes do not expand friend-request functionality."
       ]
     }
   ],
   "constraints": [
     "Backend must remain a single Motoko actor in backend/main.mo (no additional backend services).",
-    "Only create backend/migration.mo changes if state schema changes require upgrade compatibility.",
-    "Do not modify files under frontend/src/hooks/useInternetIdentity.ts(x), frontend/src/hooks/useActor.ts, frontend/src/main.tsx, or any files under frontend/src/components/ui; compose them instead.",
-    "Use English for all user-facing UI text."
+    "Do not modify frontend files under frontend/src/components/ui or any path listed in frontend.immutablePaths.",
+    "Use English for any user-facing text."
   ],
   "nonGoals": [
-    "Implementing real peer-to-peer WebRTC signaling/media exchange between two different users (beyond the current in-app calling experience model).",
-    "Group chats or broadcasting images to multiple users.",
-    "Third-party authentication or external file storage/CDNs."
+    "Implementing a new friend request option or additional friend-request flows.",
+    "Group chats or multi-participant conversations.",
+    "Real-time calling via WebSockets/Socket.io (not supported)."
   ],
   "imageRequirements": {
     "required": [],
-    "edits": [
-      "Convert the uploaded logo screenshot into a clean square app icon with transparent/solid background and export (Screenshot_2026-02-12-00-43-04-65_680d03679600f7af0b4c700c6b270fe7.jpg > yglsup-app-icon.dim_512x512.png)",
-      "Create a wider header logo version derived from the uploaded image (Screenshot_2026-02-12-00-43-04-65_680d03679600f7af0b4c700c6b270fe7.jpg > yglsup-logo.dim_1200x300.png)"
-    ]
-  },
-  "userProfileUpdate": {
-    "goalsToAdd": [],
-    "goalsToRemove": [],
-    "preferencesToAdd": [],
-    "preferencesToRemove": [],
-    "miscToAdd": [],
-    "miscToRemove": [],
-    "fieldsToSet": {},
-    "fieldsToDelete": []
+    "edits": []
   }
 }

@@ -10,25 +10,6 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export type CallId = string;
-export type CallKind = { 'video' : null } |
-  { 'voice' : null };
-export interface CallSession {
-  'id' : CallId,
-  'startTime' : Timestamp,
-  'status' : CallStatus,
-  'offer' : [] | [string],
-  'endTime' : [] | [Timestamp],
-  'kind' : CallKind,
-  'answer' : [] | [string],
-  'callee' : UserId,
-  'caller' : UserId,
-}
-export type CallStatus = { 'ringing' : null } |
-  { 'initiated' : null } |
-  { 'missed' : null } |
-  { 'ended' : null } |
-  { 'inProgress' : null };
 export type ConversationId = string;
 export interface ConversationMetadata {
   'participants' : [UserId, UserId],
@@ -81,40 +62,26 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
-  'acceptFriendRequest' : ActorMethod<[Principal], undefined>,
-  'answerCall' : ActorMethod<[CallId, string], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'blockUser' : ActorMethod<[Principal], undefined>,
-  'declineFriendRequest' : ActorMethod<[Principal], undefined>,
-  'fetchCallAnswer' : ActorMethod<[CallId], [] | [string]>,
-  'fetchCallOffer' : ActorMethod<[CallId], [] | [string]>,
-  'getActiveCalls' : ActorMethod<[], Array<CallSession>>,
-  'getCallDetails' : ActorMethod<[CallId], [] | [CallSession]>,
+  'deleteConversation' : ActorMethod<[ConversationId], undefined>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getConversations' : ActorMethod<[], Array<ConversationMetadata>>,
   'getCurrentUser' : ActorMethod<[], [] | [InternalUserProfile]>,
-  'getFriends' : ActorMethod<[], Array<Principal>>,
   'getMessages' : ActorMethod<[ConversationId], Array<Message>>,
-  'getPendingFriendRequests' : ActorMethod<[], Array<Principal>>,
   'getUnreadConversations' : ActorMethod<[], Array<ConversationId>>,
   'getUser' : ActorMethod<[Principal], [] | [InternalUserProfile]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
-  'initiateCall' : ActorMethod<[UserId, CallKind], CallId>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'markAsRead' : ActorMethod<[ConversationId], undefined>,
   'register' : ActorMethod<[string], InternalUserProfile>,
-  'removeFriend' : ActorMethod<[Principal], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchUsers' : ActorMethod<[string], Array<InternalUserProfile>>,
-  'sendFriendRequest' : ActorMethod<[Principal], undefined>,
   'sendMessage' : ActorMethod<
     [ConversationId, string, [] | [ExternalBlob]],
     Message
   >,
   'startConversation' : ActorMethod<[UserId], ConversationId>,
-  'updateCallOffer' : ActorMethod<[CallId, string], undefined>,
-  'updateCallStatus' : ActorMethod<[CallId, CallStatus], undefined>,
   'updateDisplayName' : ActorMethod<[string], InternalUserProfile>,
 }
 export declare const idlService: IDL.ServiceClass;

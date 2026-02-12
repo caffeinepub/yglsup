@@ -1,14 +1,13 @@
 # Specification
 
 ## Summary
-**Goal:** Improve core 1:1 communication by fixing the call flow, adding in-chat photo sharing, gating chats/calls behind accepted friend requests, and updating the app’s branding to use the user-provided image.
+**Goal:** Let users delete 1:1 conversations and stabilize the full call lifecycle so calling UI and media devices don’t get stuck or desync.
 
 **Planned changes:**
-- Fix 1:1 voice/video call initiation so it reliably opens CallScreen, requests mic/camera permissions as needed, uses consistent voice vs video detection, and shows a clear in-UI error state when media acquisition fails (with a safe way to end/close the call).
-- Add picture sharing in 1:1 chats: users can pick an image, send it as a message, and recipients can view it inline; update conversation list previews to show a label (e.g., “Photo”) for image messages.
-- Persist image messages in the existing single-canister backend architecture while keeping existing text messages readable after upgrade (add migration only if required).
-- Implement friend requests (send, list incoming pending, accept/reject, list friends) and enforce on the backend that starting chats, sending messages, and initiating calls only work for accepted friends; show English UI errors when blocked.
-- Update NewChatDialog to send friend requests (instead of starting a conversation immediately) and add a “Requests” view to manage incoming requests.
-- Replace existing generated branding in the UI with static frontend assets derived from the uploaded image (app icon + header logo), loaded only from frontend static files.
+- Add an authenticated backend method to delete a conversation by ConversationId, only allowing participants, and ensure deleted conversations no longer appear in conversation lists and their messages can’t be fetched.
+- Add frontend conversation-list UI to delete a 1:1 chat with an English confirmation prompt, refresh the list after deletion, and clear the thread view if the deleted conversation was selected.
+- Audit and fix the end-to-end voice/video call lifecycle across backend and frontend (initiate, ringing/in-progress, minimize/restore, mute/unmute, end) to prevent runtime errors, stuck sessions, duplicated streams, and unreleased media tracks.
+- Improve call error handling for media permission/device failures and backend initiation failures with clear English UI states/toasts and correct reset of any loading/initiating state.
+- Ensure no new friend-request features, UI entry points, routes, or backend methods are introduced as part of these changes.
 
-**User-visible outcome:** Users can reliably start voice/video calls with clear permission/error handling, share photos in 1:1 chats, and only chat/call after becoming friends via accepted requests; the app displays the new YGLSUP icon/logo derived from the uploaded image.
+**User-visible outcome:** Users can delete a 1:1 chat from the conversation list (with confirmation) and calls (voice/video) start, minimize/restore, mute/unmute, and end reliably with clear English errors when something fails.

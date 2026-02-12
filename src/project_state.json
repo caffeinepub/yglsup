@@ -1,158 +1,36 @@
 {
   "schemaVersion": "1.0.0",
-  "projectStateVersion": 7,
-  "summary": "Build YGLSUP, a WhatsApp-like messaging application with username-only onboarding (no Internet Identity login) and voice/video calling features.",
+  "projectStateVersion": 3,
+  "summary": "New project",
   "architectural_notes": [
-    "Onboarding should be username-only (display name entry) with no Internet Identity authentication flow.",
-    "Chat initiation should be gated behind an accept/deny friend request flow (no messaging until accepted)."
+    "Do not add a friend request option for now (deferred)."
   ],
   "known_issues": [
-    "Voice/video call option is not working in the deployed app (call UI/flow failing)."
+    "Call feature has multiple issues; user requested to fix all call-related problems."
   ],
   "isFixRequest": true,
-  "imageRequirements": "## Edit Images\n- Convert the uploaded logo screenshot into a clean square app icon with transparent/solid background and export (Screenshot_2026-02-12-00-43-04-65_680d03679600f7af0b4c700c6b270fe7.jpg > yglsup-app-icon.dim_512x512.png)\n- Create a wider header logo version derived from the uploaded image (Screenshot_2026-02-12-00-43-04-65_680d03679600f7af0b4c700c6b270fe7.jpg > yglsup-logo.dim_1200x300.png)",
   "existing_features": [
     {
-      "id": "feature-set-up-the-application-branding-so-the-app-name-is-yglsup-throughout-the-ui-titles-headers-auth-screens-and-in-any-visible-product-identity",
-      "title": "Set up the application branding so the app name is \"YGLSUP\" throughout the UI (titles, headers, auth screens) and in any visible product identity.",
+      "id": "feature-add-a-delete-conversation-capability-so-a-user-can-delete-a-1-1-chat-with-a-person-removing-the-conversation-and-its-messages-from-the-conversation-list",
+      "title": "Add a delete-conversation capability so a user can delete a 1:1 chat with a person, removing the conversation (and its messages) from the conversation list.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-implement-internet-identity-login-and-a-basic-user-profile-flow-on-first-login-prompt-the-user-to-set-a-display-name-store-and-retrieve-the-display-name-for-subsequent-sessions",
-      "title": "Implement Internet Identity login and a basic user profile flow: on first login, prompt the user to set a display name; store and retrieve the display name for subsequent sessions.",
+      "id": "feature-fix-all-call-related-issues-by-auditing-and-correcting-the-end-to-end-call-lifecycle-initiate-ringing-in-progress-minimize-restore-mute-unmute-and-end-so-calls-do-not-get-stuck-leak-media-devices-or-leave-the-ui-in-an-inconsistent-state",
+      "title": "Fix all call-related issues by auditing and correcting the end-to-end call lifecycle (initiate, ringing/in-progress, minimize/restore, mute/unmute, and end) so calls do not get stuck, leak media devices, or leave the UI in an inconsistent state.",
       "reqIds": [
         "REQ-2"
       ],
       "version": 1
     },
     {
-      "id": "feature-build-the-main-whatsapp-like-ui-layout-for-yglsup-left-panel-with-conversation-list-main-panel-with-message-thread-and-a-message-composer-to-send-messages",
-      "title": "Build the main WhatsApp-like UI layout for YGLSUP: left panel with conversation list, main panel with message thread, and a message composer to send messages.",
+      "id": "feature-do-not-add-any-new-friend-request-feature-or-new-friend-request-ui-entry-points-as-part-of-this-change-set",
+      "title": "Do not add any new friend-request feature or new friend-request UI entry points as part of this change set.",
       "reqIds": [
-        "REQ-4"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-a-new-chat-flow-that-lets-a-user-start-a-1-1-conversation-by-selecting-another-user-by-searching-display-name-and-then-opens-that-conversation",
-      "title": "Add a \"New chat\" flow that lets a user start a 1:1 conversation by selecting another user (by searching display name) and then opens that conversation.",
-      "reqIds": [
-        "REQ-5"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-message-synchronization-suitable-for-an-internet-computer-app-without-websockets-after-sending-a-message-refresh-the-thread-while-viewing-an-open-conversation-periodically-refresh-messages-polling-with-sensible-limits-to-avoid-excessive-calls",
-      "title": "Implement message synchronization suitable for an Internet Computer app without WebSockets: after sending a message, refresh the thread; while viewing an open conversation, periodically refresh messages (polling) with sensible limits to avoid excessive calls.",
-      "reqIds": [
-        "REQ-6"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-basic-conversation-metadata-in-the-ui-show-last-message-preview-and-last-activity-time-in-the-conversation-list-show-unread-indicator-based-on-last-seen-per-conversation-for-the-authenticated-user",
-      "title": "Add basic conversation metadata in the UI: show last message preview and last activity time in the conversation list; show unread indicator based on last-seen per conversation for the authenticated user.",
-      "reqIds": [
-        "REQ-7"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-apply-a-coherent-whatsapp-inspired-but-not-identical-visual-theme-for-yglsup-using-tailwind-clean-light-background-green-accent-identity-rounded-chat-bubbles-and-consistent-typography-across-screens",
-      "title": "Apply a coherent, WhatsApp-inspired (but not identical) visual theme for YGLSUP using Tailwind: clean light background, green-accent identity, rounded chat bubbles, and consistent typography across screens.",
-      "reqIds": [
-        "REQ-8"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-generate-and-include-static-branding-images-for-yglsup-logo-app-icon-and-render-them-in-the-ui-e-g-login-header-and-app-header-from-frontend-static-assets",
-      "title": "Generate and include static branding images for YGLSUP (logo + app icon) and render them in the UI (e.g., login header and app header) from frontend static assets.",
-      "reqIds": [
-        "REQ-9"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-remove-the-internet-identity-login-requirement-from-the-app-flow-and-replace-it-with-a-name-only-start-screen-on-first-launch-prompt-the-user-to-enter-a-display-name-persist-it-locally-and-then-enter-the-main-chat-ui-without-showing-any-internet-identity-login-ui",
-      "title": "Remove the Internet Identity login requirement from the app flow and replace it with a name-only start screen: on first launch, prompt the user to enter a display name, persist it locally, and then enter the main chat UI without showing any Internet Identity login UI.",
-      "reqIds": [
-        "REQ-10"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-non-internet-identity-identity-mechanism-so-each-user-is-not-anonymous-when-calling-the-motoko-canister-generate-a-local-keypair-identity-in-the-browser-persist-it-e-g-localstorage-and-use-it-to-create-the-backend-actor-for-all-queries-mutations-update-the-app-to-use-this-new-actor-source-without-modifying-any-files-under-frontend-src-hooks-useinternetidentity-ts-x-or-frontend-src-hooks-useactor-ts",
-      "title": "Implement a non-Internet-Identity identity mechanism so each user is not anonymous when calling the Motoko canister: generate a local keypair/identity in the browser, persist it (e.g., localStorage), and use it to create the backend actor for all queries/mutations; update the app to use this new actor source without modifying any files under frontend/src/hooks/useInternetIdentity.ts(x) or frontend/src/hooks/useActor.ts.",
-      "reqIds": [
-        "REQ-11"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-the-onboarding-profile-flow-to-work-with-the-new-name-only-start-register-the-entered-display-name-in-the-backend-for-the-locally-generated-principal-and-provide-a-simple-in-app-way-to-change-the-display-name-later-persist-locally-and-update-backend-profile-remove-disable-logout-ui-that-clears-internet-identity",
-      "title": "Update the onboarding/profile flow to work with the new name-only start: register the entered display name in the backend for the locally-generated principal, and provide a simple in-app way to change the display name later (persist locally and update backend profile). Remove/disable logout UI that clears Internet Identity.",
-      "reqIds": [
-        "REQ-12"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-voice-call-and-video-call-options-within-a-1-1-conversation-ui-e-g-in-the-messagethread-header-that-start-an-in-app-calling-experience",
-      "title": "Add 'Voice call' and 'Video call' options within a 1:1 conversation UI (e.g., in the MessageThread header) that start an in-app calling experience.",
-      "reqIds": [
-        "REQ-13"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-when-the-user-navigates-back-from-the-active-call-screen-while-a-voice-video-call-is-ongoing-show-a-persistent-side-popup-call-chip-that-remains-visible-in-the-app-and-provides-call-controls-including-mic-mute-unmute-and-a-way-to-return-to-the-full-call-screen",
-      "title": "When the user navigates back from the active call screen while a voice/video call is ongoing, show a persistent side popup/call chip that remains visible in the app and provides call controls, including mic mute/unmute and a way to return to the full call screen.",
-      "reqIds": [
-        "REQ-15"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-microphone-mute-unmute-behavior-for-voice-and-video-calls-so-the-control-actually-toggles-the-local-audio-track-and-the-ui-reflects-the-current-state-consistently-in-both-the-full-call-screen-and-the-side-popup",
-      "title": "Implement microphone mute/unmute behavior for voice and video calls so the control actually toggles the local audio track and the UI reflects the current state consistently in both the full call screen and the side popup.",
-      "reqIds": [
-        "REQ-16"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-fix-the-in-app-voice-video-call-option-so-that-starting-a-call-from-a-1-1-conversation-reliably-opens-the-callscreen-requests-microphone-camera-permissions-as-needed-and-shows-a-clear-in-ui-error-state-when-media-permissions-are-denied-or-media-acquisition-fails",
-      "title": "Fix the in-app voice/video call option so that starting a call from a 1:1 conversation reliably opens the CallScreen, requests microphone/camera permissions as needed, and shows a clear in-UI error state when media permissions are denied or media acquisition fails.",
-      "reqIds": [
-        "REQ-17"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-add-an-in-chat-picture-sharing-option-in-1-1-conversations-users-can-pick-an-image-from-their-device-send-it-as-a-message-and-recipients-can-view-it-inline-in-the-message-thread",
-      "title": "Add an in-chat picture sharing option in 1:1 conversations: users can pick an image from their device, send it as a message, and recipients can view it inline in the message thread.",
-      "reqIds": [
-        "REQ-18"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-implement-a-friend-request-system-where-users-must-send-a-friend-request-and-the-recipient-must-accept-it-before-either-user-can-start-a-chat-send-messages-or-initiate-calls-with-the-other-user",
-      "title": "Implement a friend request system where users must send a friend request and the recipient must accept it before either user can start a chat, send messages, or initiate calls with the other user.",
-      "reqIds": [
-        "REQ-19"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-update-yglsup-branding-assets-to-use-the-user-provided-uploaded-picture-in-the-app-as-the-primary-logo-app-icon-and-render-it-wherever-the-app-currently-shows-its-generated-branding-images",
-      "title": "Update YGLSUP branding assets to use the user-provided uploaded picture in the app as the primary logo/app icon, and render it wherever the app currently shows its generated branding images.",
-      "reqIds": [
-        "REQ-20"
+        "REQ-3"
       ],
       "version": 1
     }
@@ -160,65 +38,12 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Create YGLSUP, a WhatsApp-like messaging application (core chat/messaging app).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-4",
-      "summary": "Implement core chat data model and persistence in the Motoko backend to support 1:1 conversations: users, conversations (between two principals), messages (text, sender, timestamp).",
-      "reqIds": [
-        "REQ-3"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-5",
-      "summary": "Remove Internet Identity login; allow users to start the app by entering a display name only (no authentication).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-6",
-      "summary": "Add voice call and video call options within chats.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-7",
-      "summary": "During an ongoing voice/video call, when navigating back, show a persistent side popup/call chip with call controls including mic mute/unmute.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-12",
-      "summary": "Implement a basic call state model and persistence in the Motoko backend to support call initiation and join for 1:1 voice/video calls (suitable for an IC app without WebSockets), including storing call sessions and any required signaling payloads retrievable via polling.",
-      "reqIds": [
-        "REQ-14"
-      ],
-      "status": "pending"
-    },
-    {
-      "id": "AR-13",
-      "summary": "Add in-chat picture sharing (send/receive images in 1:1 conversations).",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-14",
-      "summary": "Add a friend request system: users must send a request and the recipient must accept (request list) before starting a chat.",
-      "reqIds": [],
-      "status": "pending"
-    },
-    {
-      "id": "AR-15",
-      "summary": "Update app branding/assets to use the user-provided picture in the app UI (e.g., logo/app icon).",
+      "summary": "Add option to delete a person’s chat/conversation",
       "reqIds": [],
       "status": "pending"
     }
   ],
-  "gameProjectType": "none",
-  "projectName": "YGLSUP",
+  "projectName": "Add conversation deletion and resolve call feature issues",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

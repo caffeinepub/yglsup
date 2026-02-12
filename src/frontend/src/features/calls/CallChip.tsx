@@ -2,14 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, Mic, MicOff, Video } from 'lucide-react';
 import { useCall } from './CallProvider';
-import { CallKind } from '../../backend';
 
 export default function CallChip() {
   const { activeCall, isMinimized, isMuted, restoreCall, endCall, toggleMute } = useCall();
 
   if (!activeCall || !isMinimized) return null;
 
-  const isVideoCall = activeCall.kind === CallKind.video;
+  const isVideoCall = activeCall.kind === 'video';
 
   const peerInitials = activeCall.peerName
     .split(' ')
@@ -17,6 +16,16 @@ export default function CallChip() {
     .join('')
     .toUpperCase()
     .slice(0, 2);
+
+  const handleToggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleMute();
+  };
+
+  const handleEndCall = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    endCall();
+  };
 
   return (
     <div className="fixed bottom-6 right-6 z-40 animate-in slide-in-from-bottom-4">
@@ -50,10 +59,7 @@ export default function CallChip() {
                 ? 'bg-red-500 hover:bg-red-600 text-white border-red-500'
                 : 'bg-white/10 hover:bg-white/20 text-white border-white/20'
             }`}
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleMute();
-            }}
+            onClick={handleToggleMute}
           >
             {isMuted ? <MicOff className="h-4 w-4 mr-1.5" /> : <Mic className="h-4 w-4 mr-1.5" />}
             {isMuted ? 'Unmute' : 'Mute'}
@@ -62,10 +68,7 @@ export default function CallChip() {
           <Button
             size="sm"
             className="flex-1 bg-red-500 hover:bg-red-600 text-white"
-            onClick={(e) => {
-              e.stopPropagation();
-              endCall();
-            }}
+            onClick={handleEndCall}
           >
             <Phone className="h-4 w-4 mr-1.5 rotate-135" />
             End

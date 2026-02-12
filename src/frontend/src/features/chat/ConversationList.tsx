@@ -1,21 +1,37 @@
+import { useState } from 'react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { useConversations, useUnreadConversations, useGetUser } from '../../hooks/useQueries';
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useConversations, useUnreadConversations, useGetUser, useDeleteConversation } from '../../hooks/useQueries';
 import { formatRelativeTime } from './time';
 import { cn } from '@/lib/utils';
+import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { InternalUserProfile, ConversationId } from '../../backend';
 
 interface ConversationListProps {
   currentUser: InternalUserProfile;
   selectedConversationId: ConversationId | null;
   onSelectConversation: (id: ConversationId) => void;
+  onConversationDeleted: (id: ConversationId) => void;
 }
 
 export default function ConversationList({
   currentUser,
   selectedConversationId,
   onSelectConversation,
+  onConversationDeleted,
 }: ConversationListProps) {
   const { data: conversations = [], isLoading } = useConversations();
   const { data: unreadConversations = [] } = useUnreadConversations();
@@ -65,6 +81,7 @@ export default function ConversationList({
               isSelected={isSelected}
               currentUserId={currentUser.principal.toString()}
               onSelect={() => onSelectConversation(conversationId)}
+              onDelete={() => onConversationDeleted(conversationId)}
             />
           );
         })}
@@ -82,9 +99,11 @@ interface ConversationItemProps {
   isSelected: boolean;
   currentUserId: string;
   onSelect: () => void;
+  onDelete: () => void;
 }
 
 function ConversationItem({
+  conversationId,
   otherUserId,
   lastMessage,
   lastUpdate,
@@ -92,8 +111,11 @@ function ConversationItem({
   isSelected,
   currentUserId,
   onSelect,
+  onDelete,
 }: ConversationItemProps) {
   const { data: otherUser } = useGetUser(otherUserId);
+  const deleteConversationMutation = useDeleteConversation();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const otherUserInitials = otherUser
     ? otherUser.displayName
@@ -128,44 +150,99 @@ function ConversationItem({
 
   const lastMessageText = getLastMessagePreview();
 
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDeleteDialog(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      await deleteConversationMutation.mutateAsync(conversationId);
+      toast.success('Chat deleted successfully');
+      onDelete();
+      setShowDeleteDialog(false);
+    } catch (error: any) {
+      console.error('Failed to delete conversation:', error);
+      const errorMessage = error.message || 'Failed to delete chat';
+      toast.error(errorMessage);
+      setShowDeleteDialog(false);
+    }
+  };
+
   return (
-    <button
-      onClick={onSelect}
-      className={cn(
-        'w-full p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-left',
-        isSelected && 'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-      )}
-    >
-      <Avatar className="h-12 w-12 shrink-0">
-        <AvatarFallback className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-semibold">
-          {otherUserInitials}
-        </AvatarFallback>
-      </Avatar>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <p className={cn('text-sm font-semibold truncate', isUnread && 'text-emerald-700 dark:text-emerald-400')}>
-            {otherUserDisplayName}
-          </p>
-          <span className="text-xs text-muted-foreground shrink-0 ml-2">
-            {formatRelativeTime(lastUpdate)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <p
-            className={cn(
-              'text-sm truncate',
-              isUnread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-muted-foreground'
-            )}
-          >
-            {lastMessageText}
-          </p>
-          {isUnread && (
-            <Badge className="ml-2 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white">
-              New
-            </Badge>
-          )}
-        </div>
+    <>
+      <div
+        className={cn(
+          'w-full p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group',
+          isSelected && 'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
+        )}
+      >
+        <button
+          onClick={onSelect}
+          className="flex-1 flex items-start gap-3 text-left min-w-0"
+        >
+          <Avatar className="h-12 w-12 shrink-0">
+            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-semibold">
+              {otherUserInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <p className={cn('text-sm font-semibold truncate', isUnread && 'text-emerald-700 dark:text-emerald-400')}>
+                {otherUserDisplayName}
+              </p>
+              <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                {formatRelativeTime(lastUpdate)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <p
+                className={cn(
+                  'text-sm truncate',
+                  isUnread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-muted-foreground'
+                )}
+              >
+                {lastMessageText}
+              </p>
+              {isUnread && (
+                <Badge className="ml-2 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white">
+                  New
+                </Badge>
+              )}
+            </div>
+          </div>
+        </button>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleDeleteClick}
+          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+          title="Delete chat"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
-    </button>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the conversation and messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={deleteConversationMutation.isPending}
+            >
+              {deleteConversationMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

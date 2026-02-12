@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchUsers, useStartConversation, useFriends, useSendFriendRequest } from '../../hooks/useQueries';
+import { useSearchUsers, useStartConversation } from '../../hooks/useQueries';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Search, Loader2, MessageSquare, UserPlus } from 'lucide-react';
+import { Search, Loader2, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import type { InternalUserProfile, ConversationId } from '../../backend';
 
@@ -30,9 +29,7 @@ export default function NewChatDialog({
 }: NewChatDialogProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const { data: searchResults = [], isLoading: isSearching } = useSearchUsers(searchTerm);
-  const { data: friends = [] } = useFriends();
   const startConversationMutation = useStartConversation();
-  const sendFriendRequestMutation = useSendFriendRequest();
 
   const handleStartConversation = async (otherUser: InternalUserProfile) => {
     try {
@@ -42,25 +39,9 @@ export default function NewChatDialog({
     } catch (error: any) {
       console.error('Failed to start conversation:', error);
       if (error.message?.includes('friendship')) {
-        toast.error('You must be friends to start a conversation');
+        toast.error('Cannot start conversation with this user');
       } else {
         toast.error('Failed to start conversation');
-      }
-    }
-  };
-
-  const handleSendFriendRequest = async (otherUser: InternalUserProfile) => {
-    try {
-      await sendFriendRequestMutation.mutateAsync(otherUser.principal);
-      toast.success(`Friend request sent to ${otherUser.displayName}`);
-    } catch (error: any) {
-      console.error('Failed to send friend request:', error);
-      if (error.message?.includes('already pending')) {
-        toast.error('Friend request already sent');
-      } else if (error.message?.includes('already friends')) {
-        toast.error('You are already friends');
-      } else {
-        toast.error('Failed to send friend request');
       }
     }
   };
@@ -68,10 +49,6 @@ export default function NewChatDialog({
   const filteredResults = searchResults.filter(
     (user) => user.principal.toString() !== currentUser.principal.toString()
   );
-
-  const isFriend = (userId: string) => {
-    return friends.some((f) => f.toString() === userId);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -112,8 +89,6 @@ export default function NewChatDialog({
                   .toUpperCase()
                   .slice(0, 2);
 
-                const userIsFriend = isFriend(user.principal.toString());
-
                 return (
                   <div
                     key={user.principal.toString()}
@@ -125,38 +100,20 @@ export default function NewChatDialog({
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">{user.displayName}</p>
-                        {userIsFriend && (
-                          <Badge variant="outline" className="text-xs">Friend</Badge>
-                        )}
-                      </div>
+                      <p className="font-medium text-sm truncate">{user.displayName}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {user.principal.toString().slice(0, 30)}...
                       </p>
                     </div>
-                    {userIsFriend ? (
-                      <Button
-                        size="sm"
-                        onClick={() => handleStartConversation(user)}
-                        disabled={startConversationMutation.isPending}
-                        className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
-                      >
-                        <MessageSquare className="h-4 w-4 mr-1.5" />
-                        Chat
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleSendFriendRequest(user)}
-                        disabled={sendFriendRequestMutation.isPending}
-                        className="text-emerald-600 border-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950"
-                      >
-                        <UserPlus className="h-4 w-4 mr-1.5" />
-                        Add
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => handleStartConversation(user)}
+                      disabled={startConversationMutation.isPending}
+                      className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
+                    >
+                      <MessageSquare className="h-4 w-4 mr-1.5" />
+                      Chat
+                    </Button>
                   </div>
                 );
               })

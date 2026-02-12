@@ -4,13 +4,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Phone, Mic, MicOff, Video, Minimize2, AlertCircle } from 'lucide-react';
 import { useCall } from './CallProvider';
 import { useLocalMedia } from './useLocalMedia';
-import { CallKind } from '../../backend';
 
 export default function CallScreen() {
-  const { activeCall, isMuted, endCall, minimizeCall, toggleMute, setMuted } = useCall();
+  const { activeCall, isMuted, isMinimized, endCall, minimizeCall, toggleMute } = useCall();
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  const isVideoCall = activeCall?.kind === CallKind.video;
+  const isVideoCall = activeCall?.kind === 'video';
 
   // Always call hooks unconditionally
   const { stream, isAcquiring, error, setAudioEnabled } = useLocalMedia({
@@ -39,6 +38,9 @@ export default function CallScreen() {
 
   // Early return after all hooks
   if (!activeCall) return null;
+
+  // Hide when minimized but keep component mounted
+  if (isMinimized) return null;
 
   const peerInitials = activeCall.peerName
     .split(' ')

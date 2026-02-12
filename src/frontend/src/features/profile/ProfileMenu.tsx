@@ -9,8 +9,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Edit } from 'lucide-react';
+import { User, Edit, HelpCircle } from 'lucide-react';
 import ChangeDisplayNameDialog from './ChangeDisplayNameDialog';
+import AppInfoHelpDialog from './AppInfoHelpDialog';
 import type { InternalUserProfile } from '../../backend';
 
 interface ProfileMenuProps {
@@ -19,6 +20,7 @@ interface ProfileMenuProps {
 
 export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
   const [showChangeNameDialog, setShowChangeNameDialog] = useState(false);
+  const [showAppInfoDialog, setShowAppInfoDialog] = useState(false);
 
   const initials = currentUser.displayName
     .split(' ')
@@ -55,6 +57,11 @@ export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
             <User className="mr-2 h-4 w-4" />
             Profile Settings
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => setShowAppInfoDialog(true)}>
+            <HelpCircle className="mr-2 h-4 w-4" />
+            App Info / Help
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -62,6 +69,11 @@ export default function ProfileMenu({ currentUser }: ProfileMenuProps) {
         open={showChangeNameDialog}
         onOpenChange={setShowChangeNameDialog}
         currentName={currentUser.displayName}
+      />
+
+      <AppInfoHelpDialog
+        open={showAppInfoDialog}
+        onOpenChange={setShowAppInfoDialog}
       />
     </>
   );
