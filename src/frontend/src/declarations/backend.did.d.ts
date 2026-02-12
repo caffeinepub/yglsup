@@ -10,6 +10,26 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
+export type CallId = string;
+export type CallKind = { 'video' : null } |
+  { 'voice' : null };
+export interface CallSession {
+  'id' : CallId,
+  'startTime' : Timestamp,
+  'status' : CallStatus,
+  'offer' : [] | [string],
+  'endTime' : [] | [Timestamp],
+  'kind' : CallKind,
+  'answer' : [] | [string],
+  'isActive' : boolean,
+  'callee' : UserId,
+  'caller' : UserId,
+}
+export type CallStatus = { 'ringing' : null } |
+  { 'initiated' : null } |
+  { 'missed' : null } |
+  { 'ended' : null } |
+  { 'inProgress' : null };
 export type ConversationId = string;
 export interface ConversationMetadata {
   'participants' : [UserId, UserId],
@@ -62,13 +82,21 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'acceptFriendRequest' : ActorMethod<[Principal], undefined>,
+  'answerCall' : ActorMethod<[CallId, string], CallSession>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'blockUser' : ActorMethod<[Principal], undefined>,
+  'declineFriendRequest' : ActorMethod<[Principal], undefined>,
   'deleteConversation' : ActorMethod<[ConversationId], undefined>,
+  'getCallSession' : ActorMethod<[CallId], [] | [CallSession]>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getConversations' : ActorMethod<[], Array<ConversationMetadata>>,
   'getCurrentUser' : ActorMethod<[], [] | [InternalUserProfile]>,
+  'getFriends' : ActorMethod<[], Array<Principal>>,
   'getMessages' : ActorMethod<[ConversationId], Array<Message>>,
+  'getPendingFriendRequests' : ActorMethod<[], Array<Principal>>,
+  'getPendingIncomingCalls' : ActorMethod<[], Array<CallSession>>,
   'getUnreadConversations' : ActorMethod<[], Array<ConversationId>>,
   'getUser' : ActorMethod<[Principal], [] | [InternalUserProfile]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
@@ -77,11 +105,14 @@ export interface _SERVICE {
   'register' : ActorMethod<[string], InternalUserProfile>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchUsers' : ActorMethod<[string], Array<InternalUserProfile>>,
+  'sendFriendRequest' : ActorMethod<[Principal], undefined>,
   'sendMessage' : ActorMethod<
     [ConversationId, string, [] | [ExternalBlob]],
     Message
   >,
+  'startCall' : ActorMethod<[UserId, CallKind, string], CallSession>,
   'startConversation' : ActorMethod<[UserId], ConversationId>,
+  'updateCallStatus' : ActorMethod<[CallId, CallStatus], CallSession>,
   'updateDisplayName' : ActorMethod<[string], InternalUserProfile>,
 }
 export declare const idlService: IDL.ServiceClass;

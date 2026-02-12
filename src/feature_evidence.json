@@ -2,12 +2,13 @@
   "kind": "feature_evidence_report",
   "features": [
     {
-      "featureId": "feature-add-a-delete-conversation-capability-so-a-user-can-delete-a-1-1-chat-with-a-person-removing-the-conversation-and-its-messages-from-the-conversation-list",
-      "featureTitle": "Add a delete-conversation capability so a user can delete a 1:1 chat with a person, removing the conversation (and its messages) from the conversation list.",
+      "featureId": "feature-fix-the-outgoing-call-webrtc-signaling-flow-so-that-the-same-rtcpeerconnection-used-to-generate-the-sdp-offer-is-the-one-that-later-applies-the-sdp-answer-and-ensure-the-backend-stored-offer-answer-lifecycle-results-in-a-connected-call-between-two-different-users",
+      "featureTitle": "Fix the outgoing call WebRTC/signaling flow so that the same RTCPeerConnection used to generate the SDP offer is the one that later applies the SDP answer, and ensure the backend-stored offer/answer lifecycle results in a connected call between two different users.",
       "files": [
-        "frontend/src/features/chat/ChatShell.tsx",
-        "frontend/src/features/chat/ConversationList.tsx",
-        "frontend/src/hooks/useQueries.ts"
+        "frontend/src/features/calls/CallProvider.tsx",
+        "frontend/src/features/calls/CallScreen.tsx",
+        "frontend/src/features/calls/IncomingCallManager.tsx",
+        "frontend/src/features/chat/MessageThread.tsx"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -25,15 +26,14 @@
       "confidence": "high"
     },
     {
-      "featureId": "feature-fix-all-call-related-issues-by-auditing-and-correcting-the-end-to-end-call-lifecycle-initiate-ringing-in-progress-minimize-restore-mute-unmute-and-end-so-calls-do-not-get-stuck-leak-media-devices-or-leave-the-ui-in-an-inconsistent-state",
-      "featureTitle": "Fix all call-related issues by auditing and correcting the end-to-end call lifecycle (initiate, ringing/in-progress, minimize/restore, mute/unmute, and end) so calls do not get stuck, leak media devices, or leave the UI in an inconsistent state.",
+      "featureId": "feature-improve-call-failure-visibility-on-the-frontend-so-users-and-developers-can-diagnose-why-calls-fail-in-production-permissions-backend-traps-signaling-missing-offer-answer-without-changing-any-immutable-hook-files",
+      "featureTitle": "Improve call failure visibility on the frontend so users and developers can diagnose why calls fail in production (permissions, backend traps, signaling missing offer/answer) without changing any immutable hook files.",
       "files": [
         "frontend/src/features/calls/CallChip.tsx",
-        "frontend/src/features/calls/CallProvider.tsx",
         "frontend/src/features/calls/CallScreen.tsx",
-        "frontend/src/features/calls/useLocalMedia.ts",
-        "frontend/src/features/chat/ChatShell.tsx",
-        "frontend/src/features/chat/MessageThread.tsx"
+        "frontend/src/features/calls/IncomingCallManager.tsx",
+        "frontend/src/features/calls/useCallSignaling.ts",
+        "frontend/src/features/calls/useIncomingCallPolling.ts"
       ],
       "components": [
         "core-infrastructure@1.0.2",
@@ -46,28 +46,7 @@
         "blob-storage@4.0.0"
       ],
       "testIds": [
-        "REQ-2"
-      ],
-      "confidence": "high"
-    },
-    {
-      "featureId": "feature-do-not-add-any-new-friend-request-feature-or-new-friend-request-ui-entry-points-as-part-of-this-change-set",
-      "featureTitle": "Do not add any new friend-request feature or new friend-request UI entry points as part of this change set.",
-      "files": [
-        "frontend/src/features/chat/MessageThread.tsx"
-      ],
-      "components": [
-        "core-infrastructure@1.0.2",
-        "shadcn-ui@1.0.0",
-        "build-template-react@1.0.0",
-        "initial-app@1.0.0",
-        "github-export-icp-cli@1.0.0",
-        "authorization@4.0.0",
-        "camera@1.0.0",
-        "blob-storage@4.0.0"
-      ],
-      "testIds": [
-        "REQ-3"
+        "REQ-4"
       ],
       "confidence": "high"
     }

@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { CallProvider } from './features/calls/CallProvider';
+import CallScreen from './features/calls/CallScreen';
+import CallChip from './features/calls/CallChip';
+import IncomingCallManager from './features/calls/IncomingCallManager';
 import ChatShell from './features/chat/ChatShell';
 import NameStartView from './features/auth/NameStartView';
 import { useLocalActor } from './hooks/useLocalActor';
@@ -78,6 +81,9 @@ function AppContent() {
   return (
     <CallProvider>
       <ChatShell currentUser={currentUser} />
+      <CallScreen />
+      <CallChip />
+      <IncomingCallManager />
     </CallProvider>
   );
 }

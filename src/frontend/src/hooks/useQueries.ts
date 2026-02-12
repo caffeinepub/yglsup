@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalActor } from './useLocalActor';
 import { Principal } from '@icp-sdk/core/principal';
-import { ExternalBlob } from '../backend';
-import type { ConversationMetadata, Message, InternalUserProfile, ConversationId } from '../backend';
+import { ExternalBlob, CallStatus, CallKind } from '../backend';
+import type { ConversationMetadata, Message, InternalUserProfile, ConversationId, CallSession, CallId } from '../backend';
 
 export function useConversations() {
   const { actor, isFetching } = useLocalActor();
@@ -158,5 +158,79 @@ export function useDeleteConversation() {
       // Surface error to caller for toast rendering
       throw error;
     },
+  });
+}
+
+// Call-related queries and mutations
+
+export function useStartCall() {
+  const { actor } = useLocalActor();
+
+  return useMutation({
+    mutationFn: async ({
+      callee,
+      kind,
+      offer,
+    }: {
+      callee: Principal;
+      kind: CallKind;
+      offer: string;
+    }) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.startCall(callee, kind, offer);
+    },
+  });
+}
+
+export function useAnswerCall() {
+  const { actor } = useLocalActor();
+
+  return useMutation({
+    mutationFn: async ({
+      callId,
+      answer,
+    }: {
+      callId: CallId;
+      answer: string;
+    }) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.answerCall(callId, answer);
+    },
+  });
+}
+
+export function useUpdateCallStatus() {
+  const { actor } = useLocalActor();
+
+  return useMutation({
+    mutationFn: async ({
+      callId,
+      status,
+    }: {
+      callId: CallId;
+      status: CallStatus;
+    }) => {
+      if (!actor) throw new Error('Actor not initialized');
+      return actor.updateCallStatus(callId, status);
+    },
+  });
+}
+
+export function useGetCallSession(callId: CallId | null) {
+  const { actor, isFetching } = useLocalActor();
+
+  return useQuery<CallSession | null>({
+    queryKey: ['callSession', callId],
+    queryFn: async () => {
+      if (!actor || !callId) return null;
+      try {
+        return await actor.getCallSession(callId);
+      } catch (error) {
+        console.error('Failed to fetch call session:', error);
+        return null;
+      }
+    },
+    enabled: !!actor && !isFetching && !!callId,
+    refetchInterval: 2000, // Poll every 2 seconds during active call
   });
 }

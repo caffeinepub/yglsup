@@ -14,9 +14,21 @@ export class ExternalBlob {
     static fromBytes(blob: Uint8Array<ArrayBuffer>): ExternalBlob;
     withUploadProgress(onProgress: (percentage: number) => void): ExternalBlob;
 }
+export type Timestamp = bigint;
+export interface CallSession {
+    id: CallId;
+    startTime: Timestamp;
+    status: CallStatus;
+    offer?: string;
+    endTime?: Timestamp;
+    kind: CallKind;
+    answer?: string;
+    isActive: boolean;
+    callee: UserId;
+    caller: UserId;
+}
 export type ConversationId = string;
 export type UserId = Principal;
-export type Timestamp = bigint;
 export interface Message {
     id: bigint;
     text: string;
@@ -33,8 +45,20 @@ export interface ConversationMetadata {
     lastMessage?: Message;
     lastUpdate: Timestamp;
 }
+export type CallId = string;
 export interface UserProfile {
     name: string;
+}
+export enum CallKind {
+    video = "video",
+    voice = "voice"
+}
+export enum CallStatus {
+    ringing = "ringing",
+    initiated = "initiated",
+    missed = "missed",
+    ended = "ended",
+    inProgress = "inProgress"
 }
 export enum UserRole {
     admin = "admin",
@@ -42,13 +66,21 @@ export enum UserRole {
     guest = "guest"
 }
 export interface backendInterface {
+    acceptFriendRequest(other: Principal): Promise<void>;
+    answerCall(callId: CallId, answer: string): Promise<CallSession>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    blockUser(other: Principal): Promise<void>;
+    declineFriendRequest(other: Principal): Promise<void>;
     deleteConversation(conversationId: ConversationId): Promise<void>;
+    getCallSession(callId: CallId): Promise<CallSession | null>;
     getCallerUserProfile(): Promise<UserProfile | null>;
     getCallerUserRole(): Promise<UserRole>;
     getConversations(): Promise<Array<ConversationMetadata>>;
     getCurrentUser(): Promise<InternalUserProfile | null>;
+    getFriends(): Promise<Array<Principal>>;
     getMessages(conversationId: ConversationId): Promise<Array<Message>>;
+    getPendingFriendRequests(): Promise<Array<Principal>>;
+    getPendingIncomingCalls(): Promise<Array<CallSession>>;
     getUnreadConversations(): Promise<Array<ConversationId>>;
     getUser(principal: Principal): Promise<InternalUserProfile | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
@@ -57,7 +89,10 @@ export interface backendInterface {
     register(displayName: string): Promise<InternalUserProfile>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchUsers(searchTerm: string): Promise<Array<InternalUserProfile>>;
+    sendFriendRequest(other: Principal): Promise<void>;
     sendMessage(conversationId: ConversationId, text: string, image: ExternalBlob | null): Promise<Message>;
+    startCall(callee: UserId, kind: CallKind, offer: string): Promise<CallSession>;
     startConversation(other: UserId): Promise<ConversationId>;
+    updateCallStatus(callId: CallId, newStatus: CallStatus): Promise<CallSession>;
     updateDisplayName(newDisplayName: string): Promise<InternalUserProfile>;
 }

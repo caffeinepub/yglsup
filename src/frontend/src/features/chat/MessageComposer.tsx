@@ -1,11 +1,11 @@
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Send, Image as ImageIcon, X } from 'lucide-react';
 import { useSendMessage } from '../../hooks/useQueries';
-import { Send, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { ExternalBlob } from '../../backend';
-import type { ConversationId } from '../../backend';
 import { toast } from 'sonner';
+import type { ConversationId } from '../../backend';
 
 interface MessageComposerProps {
   conversationId: ConversationId;
@@ -21,31 +21,21 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image must be less than 5MB');
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image size must be less than 5MB');
-      return;
-    }
-
-    setSelectedImage(file);
-    
-    // Create preview
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setImagePreview(e.target?.result as string);
-    };
-    reader.readAsDataURL(file);
   };
 
-  const clearImage = () => {
+  const handleRemoveImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
     setUploadProgress(0);
@@ -54,12 +44,12 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSend = async () => {
     const trimmedMessage = message.trim();
-    if (!trimmedMessage && !selectedImage) return;
-    if (sendMessageMutation.isPending) return;
+    
+    if (!trimmedMessage && !selectedImage) {
+      return;
+    }
 
     try {
       let imageBlob: ExternalBlob | null = null;
@@ -74,90 +64,90 @@ export default function MessageComposer({ conversationId }: MessageComposerProps
 
       await sendMessageMutation.mutateAsync({
         conversationId,
-        text: trimmedMessage || '',
+        text: trimmedMessage,
         image: imageBlob,
       });
 
-      // Clear form
       setMessage('');
-      clearImage();
+      handleRemoveImage();
     } catch (error: any) {
       console.error('Failed to send message:', error);
-      if (error.message?.includes('friendship')) {
-        toast.error('You must be friends to send messages');
-      } else {
-        toast.error('Failed to send message. Please try again.');
-      }
+      toast.error(error.message || 'Failed to send message');
     }
   };
 
-  const isUploading = sendMessageMutation.isPending && uploadProgress > 0 && uploadProgress < 100;
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  const isSending = sendMessageMutation.isPending;
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
+    <div className="p-2 pb-safe">
       {imagePreview && (
-        <div className="mb-3 relative inline-block">
+        <div className="mb-2 relative inline-block">
           <img
             src={imagePreview}
             alt="Preview"
-            className="h-20 w-20 object-cover rounded-lg border-2 border-emerald-200 dark:border-emerald-800"
+            className="h-20 w-20 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
           />
           <Button
-            type="button"
+            variant="ghost"
             size="icon"
-            variant="destructive"
-            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-            onClick={clearImage}
-            disabled={sendMessageMutation.isPending}
+            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-500 hover:bg-red-600 text-white"
+            onClick={handleRemoveImage}
           >
             <X className="h-3 w-3" />
           </Button>
-          {isUploading && (
+          {uploadProgress > 0 && uploadProgress < 100 && (
             <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-              <div className="text-white text-xs font-semibold">{uploadProgress}%</div>
+              <span className="text-white text-xs font-medium">{uploadProgress}%</span>
             </div>
           )}
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+      <div className="flex items-end gap-2">
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp"
+          accept="image/*"
           onChange={handleImageSelect}
           className="hidden"
         />
         <Button
-          type="button"
           variant="ghost"
           size="icon"
           onClick={() => fileInputRef.current?.click()}
-          disabled={sendMessageMutation.isPending}
-          className="shrink-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950"
+          disabled={isSending}
+          className="shrink-0 h-9 w-9 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
         >
           <ImageIcon className="h-5 w-5" />
         </Button>
-        <Input
-          type="text"
-          placeholder="Type a message..."
+        <Textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          disabled={sendMessageMutation.isPending}
-          className="flex-1 h-12 rounded-full bg-gray-100 dark:bg-gray-800 border-0 focus-visible:ring-emerald-600"
+          onKeyDown={handleKeyDown}
+          placeholder="Type a message..."
+          disabled={isSending}
+          className="flex-1 min-h-[36px] max-h-32 resize-none text-[14px] py-2 px-3"
+          rows={1}
         />
         <Button
-          type="submit"
-          disabled={(!message.trim() && !selectedImage) || sendMessageMutation.isPending}
+          onClick={handleSend}
+          disabled={isSending || (!message.trim() && !selectedImage)}
+          className="shrink-0 h-9 w-9 bg-emerald-600 hover:bg-emerald-700 text-white"
           size="icon"
-          className="shrink-0 h-12 w-12 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md"
         >
-          {sendMessageMutation.isPending ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+          {isSending ? (
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
           ) : (
-            <Send className="h-5 w-5" />
+            <Send className="h-4 w-4" />
           )}
         </Button>
-      </form>
+      </div>
     </div>
   );
 }

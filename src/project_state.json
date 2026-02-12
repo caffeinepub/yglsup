@@ -2,35 +2,25 @@
   "schemaVersion": "1.0.0",
   "projectStateVersion": 3,
   "summary": "New project",
-  "architectural_notes": [
-    "Do not add a friend request option for now (deferred)."
-  ],
+  "architectural_notes": [],
   "known_issues": [
-    "Call feature has multiple issues; user requested to fix all call-related problems."
+    "Call feature is not working in production (reported after Version 7 deployment)."
   ],
   "isFixRequest": true,
   "existing_features": [
     {
-      "id": "feature-add-a-delete-conversation-capability-so-a-user-can-delete-a-1-1-chat-with-a-person-removing-the-conversation-and-its-messages-from-the-conversation-list",
-      "title": "Add a delete-conversation capability so a user can delete a 1:1 chat with a person, removing the conversation (and its messages) from the conversation list.",
+      "id": "feature-fix-the-outgoing-call-webrtc-signaling-flow-so-that-the-same-rtcpeerconnection-used-to-generate-the-sdp-offer-is-the-one-that-later-applies-the-sdp-answer-and-ensure-the-backend-stored-offer-answer-lifecycle-results-in-a-connected-call-between-two-different-users",
+      "title": "Fix the outgoing call WebRTC/signaling flow so that the same RTCPeerConnection used to generate the SDP offer is the one that later applies the SDP answer, and ensure the backend-stored offer/answer lifecycle results in a connected call between two different users.",
       "reqIds": [
         "REQ-1"
       ],
       "version": 1
     },
     {
-      "id": "feature-fix-all-call-related-issues-by-auditing-and-correcting-the-end-to-end-call-lifecycle-initiate-ringing-in-progress-minimize-restore-mute-unmute-and-end-so-calls-do-not-get-stuck-leak-media-devices-or-leave-the-ui-in-an-inconsistent-state",
-      "title": "Fix all call-related issues by auditing and correcting the end-to-end call lifecycle (initiate, ringing/in-progress, minimize/restore, mute/unmute, and end) so calls do not get stuck, leak media devices, or leave the UI in an inconsistent state.",
+      "id": "feature-improve-call-failure-visibility-on-the-frontend-so-users-and-developers-can-diagnose-why-calls-fail-in-production-permissions-backend-traps-signaling-missing-offer-answer-without-changing-any-immutable-hook-files",
+      "title": "Improve call failure visibility on the frontend so users and developers can diagnose why calls fail in production (permissions, backend traps, signaling missing offer/answer) without changing any immutable hook files.",
       "reqIds": [
-        "REQ-2"
-      ],
-      "version": 1
-    },
-    {
-      "id": "feature-do-not-add-any-new-friend-request-feature-or-new-friend-request-ui-entry-points-as-part-of-this-change-set",
-      "title": "Do not add any new friend-request feature or new friend-request UI entry points as part of this change set.",
-      "reqIds": [
-        "REQ-3"
+        "REQ-4"
       ],
       "version": 1
     }
@@ -38,12 +28,28 @@
   "new_feature_requests": [
     {
       "id": "AR-1",
-      "summary": "Add option to delete a person’s chat/conversation",
+      "summary": "Fix call feature not working",
       "reqIds": [],
+      "status": "pending"
+    },
+    {
+      "id": "AR-3",
+      "summary": "Fix incoming call detection end-to-end in production by ensuring the backend exposes a working getPendingIncomingCalls() query for the authenticated user and that it returns only actionable incoming calls (e.g., initiated/ringing where caller != callee) so the frontend polling can reliably show the incoming call dialog.",
+      "reqIds": [
+        "REQ-2"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": "AR-4",
+      "summary": "Align backend call lifecycle semantics with the frontend call flow by enforcing consistent and valid status transitions for startCall, answerCall, and updateCallStatus, including correct status after answering and protection against invalid transitions by non-participants.",
+      "reqIds": [
+        "REQ-3"
+      ],
       "status": "pending"
     }
   ],
-  "projectName": "Add conversation deletion and resolve call feature issues",
+  "projectName": "Fix voice/video call feature not working in production",
   "clarification_mode": "instant",
   "clarification_rounds": 0
 }

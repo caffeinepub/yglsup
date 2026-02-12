@@ -1,76 +1,73 @@
 {
   "kind": "spec_vs_diff_report",
   "version": "1.0",
-  "generatedAt": "2026-02-12T07:28:50.616Z",
-  "summary": "Diff implements frontend conversation deletion UI hooks/wiring (selection clearing, confirmation dialog, toasts) and refactors call UI state management (CallProvider/CallChip/CallScreen) with improved local media acquisition/cleanup and error UI. However, the diff evidence is insufficient to confirm the required backend delete-conversation API and message-not-found behavior, and several REQ-2 end-to-end call lifecycle requirements (notably initiation from message thread and backend call-session consistency) are not evidenced/appear missing.",
+  "generatedAt": "2026-02-12T08:06:43.751Z",
+  "summary": "Diff implements substantial frontend-side call flow changes (single RTCPeerConnection stored in CallProvider; polling for call session/answer; incoming call polling & accept flow) and adds a backend migration to extend CallSession with an isActive flag. However, the diff summary does not provide evidence that the backend now exposes/implements the required call APIs and lifecycle/authorization rules (getPendingIncomingCalls, status transition enforcement, participant-only access), so key backend requirements cannot be verified from the provided changes.",
   "missing_requirements": [
     {
-      "id": "REQ-1",
-      "requirement": "Backend exposes a new authenticated method that deletes a conversation by ConversationId and rejects callers who are not a participant.",
-      "reason": "backend/main.mo is truncated and the diff excerpt does not show any new public delete-conversation method or participant authorization checks for deletion.",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
-      "id": "REQ-1",
-      "requirement": "Deleting a conversation removes it from subsequent getConversations() results and makes getMessages(conversationId) fail with a clear error (e.g., \"Conversation not found\").",
-      "reason": "No diff evidence shows conversation/message removal logic or an explicit \"Conversation not found\" error path in getMessages; backend content is truncated before relevant methods.",
-      "evidence": [
-        "backend/main.mo (truncated)"
-      ]
-    },
-    {
       "id": "REQ-2",
-      "requirement": "Starting a voice call and a video call from the message thread reliably opens the full-screen call UI without throwing runtime errors.",
-      "reason": "MessageThread is described/modified as \"without call ... features\" and the shown MessageThread code contains no call start controls or integration with CallProvider/CallScreen.",
+      "requirement": "Backend exposes a working getPendingIncomingCalls() query for the authenticated user that returns only actionable incoming calls (initiated/ringing where caller != callee) and does not trap.",
+      "reason": "Frontend now calls actor.getPendingIncomingCalls(), but the backend diff excerpt does not show any getPendingIncomingCalls() implementation or filtering logic; backend/main.mo content is truncated before any call methods.",
       "evidence": [
-        "frontend/src/features/chat/MessageThread.tsx",
-        "frontend-file-summaries.txt (MessageThread summary)"
+        "frontend/src/features/calls/useIncomingCallPolling.ts",
+        "backend/main.mo (truncated; no getPendingIncomingCalls shown)"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Backend call session state is consistent for both participants (no sessions stuck in #ringing/#inProgress after one side ends); ending a call transitions the session to an ended state and updates endTime.",
-      "reason": "backend/main.mo excerpt defines CallSession/CallStatus but does not show any end-call method or state transition logic; file is truncated.",
+      "id": "REQ-3",
+      "requirement": "Backend enforces consistent call status transitions for startCall/answerCall/updateCallStatus; only participants can read/mutate sessions; invalid transitions are rejected; endTime maintained on ended/missed.",
+      "reason": "The diff summary does not show startCall/answerCall/updateCallStatus/getCallSession implementations nor any participant checks or transition validation in backend/main.mo (truncated). Migration adds isActive but does not evidence status-transition enforcement or access control.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/main.mo (truncated; call methods/transition checks not shown)",
+        "backend/migration.mo"
       ]
     },
     {
-      "id": "REQ-2",
-      "requirement": "Frontend handles backend call initiation failures (including friendship-related failures) with an English error toast and resets any “initiating call” loading state.",
-      "reason": "No diff evidence shows backend call initiation being invoked from UI, nor any loading state/toast handling around initiating a call.",
+      "id": "REQ-4",
+      "requirement": "If microphone/camera permissions are denied, the call UI displays a clear error state and offers an End Call action.",
+      "reason": "CallScreen references useLocalMedia and tracks an error state, and IncomingCallManager catches getUserMedia errors, but the diff excerpt does not show any rendered UI state specifically for permission denial that includes an End Call action.",
       "evidence": [
-        "frontend/src/features/chat/MessageThread.tsx",
-        "frontend/src/features/calls/CallProvider.tsx",
-        "frontend/src/features/calls/CallScreen.tsx (truncated)"
+        "frontend/src/features/calls/CallScreen.tsx (truncated)",
+        "frontend/src/features/calls/IncomingCallManager.tsx (truncated)"
       ]
     }
   ],
   "hallucinated_features": [
     {
-      "description": "Backend friendship persistence/refactor introducing FriendshipKey and a friendships Map plus areFriends helper logic.",
-      "reason": "REQ-1/REQ-2 focus on conversation deletion and call lifecycle; while REQ-2 mentions handling friendship-related call initiation failures on the frontend, the diff explicitly introduces new backend friendship keying/persistence structures that are not directly requested in the BuildRequest.",
+      "description": "Added backend state migration introducing a new CallSession field isActive and mapping old sessions to new sessions based on status.",
+      "reason": "BuildRequest requires backend fixes to signaling/lifecycle and only allows migration if needed, but does not request adding an isActive field or any isActive-based behavior; this appears as an unrequested schema change in the provided diff summary.",
       "evidence": [
-        "backend/main.mo (truncated)"
+        "backend/migration.mo",
+        "backend/main.mo (CallSession includes isActive)"
+      ]
+    },
+    {
+      "description": "App-wide UI/branding and non-call-related UX changes (e.g., branding constants, profile menu help entry, chat layout/viewport changes, onboarding/start view, conversation list sizing).",
+      "reason": "BuildRequest scope is fixing production voice/video calls and improving call failure visibility, with constraints to compose existing UI components; the diff summary indicates multiple unrelated UI/UX changes beyond call functionality.",
+      "evidence": [
+        "frontend-file-summaries.txt"
+      ]
+    },
+    {
+      "description": "Introduced/expanded local authentication/identity flow (locally-generated identity via useLocalActor, localIdentity/localProfile utilities) beyond Internet Identity.",
+      "reason": "Non-goals explicitly state not adding new authentication providers beyond Internet Identity; the diff summary describes a local identity-based actor creation flow.",
+      "evidence": [
+        "frontend-file-summaries.txt"
       ]
     }
   ],
   "confidence": 0.62,
   "changed_files": [
     "backend/main.mo",
+    "backend/migration.mo",
     "frontend-file-summaries.txt",
     "frontend/src/features/calls/CallChip.tsx",
     "frontend/src/features/calls/CallProvider.tsx",
     "frontend/src/features/calls/CallScreen.tsx",
-    "frontend/src/features/calls/useLocalMedia.ts",
-    "frontend/src/features/chat/ChatShell.tsx",
-    "frontend/src/features/chat/ConversationList.tsx",
-    "frontend/src/features/chat/FriendRequestsDialog.tsx",
+    "frontend/src/features/calls/IncomingCallManager.tsx",
+    "frontend/src/features/calls/useCallSignaling.ts",
+    "frontend/src/features/calls/useIncomingCallPolling.ts",
     "frontend/src/features/chat/MessageThread.tsx",
-    "frontend/src/features/chat/NewChatDialog.tsx",
-    "frontend/src/hooks/useQueries.ts",
     "project_state.json"
   ]
 }

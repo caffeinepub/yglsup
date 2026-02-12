@@ -1,18 +1,20 @@
 import Time "mo:core/Time";
-import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Principal "mo:core/Principal";
-import List "mo:core/List";
-import Iter "mo:core/Iter";
 import Order "mo:core/Order";
-import Set "mo:core/Set";
+import Principal "mo:core/Principal";
 import Runtime "mo:core/Runtime";
 import Array "mo:core/Array";
+import Map "mo:core/Map";
+import List "mo:core/List";
+import Iter "mo:core/Iter";
+import Set "mo:core/Set";
 import AccessControl "authorization/access-control";
 import MixinAuthorization "authorization/MixinAuthorization";
 import Storage "blob-storage/Storage";
 import MixinStorage "blob-storage/Mixin";
+import Migration "migration";
 
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -22,7 +24,7 @@ actor {
   var messageCounter = 0;
 
   type UserId = Principal;
-  type Timestamp = Time.Time;
+  type Timestamp = Int;
   type ConversationId = Text;
   type CallId = Text;
 
@@ -63,7 +65,12 @@ actor {
     lastUpdate : Timestamp;
   };
 
-  type CallStatus = {
+  type CallKind = {
+    #voice;
+    #video;
+  };
+
+  public type CallStatus = {
     #initiated;
     #ringing;
     #inProgress;
@@ -71,7 +78,7 @@ actor {
     #missed;
   };
 
-  type CallSession = {
+  public type CallSession = {
     id : CallId;
     caller : UserId;
     callee : UserId;
@@ -79,13 +86,9 @@ actor {
     startTime : Timestamp;
     endTime : ?Timestamp;
     kind : CallKind;
-    offer : ?Text; // SDP offer/answer (as plain text)
+    offer : ?Text;
     answer : ?Text;
-  };
-
-  type CallKind = {
-    #voice;
-    #video;
+    isActive : Bool;
   };
 
   public type FriendStatus = {
@@ -101,7 +104,6 @@ actor {
     lastModified : Timestamp;
   };
 
-  // New FriendshipKey for persistent state
   type FriendshipKey = {
     user1 : Principal;
     user2 : Principal;
@@ -139,7 +141,6 @@ actor {
     caller == session.caller or caller == session.callee;
   };
 
-  // Helper to check if users are friends
   func areFriends(user1 : Principal, user2 : Principal) : Bool {
     let key1 = { user1; user2 };
     let key2 = { user1 = user2; user2 = user1 };
@@ -156,7 +157,19 @@ actor {
     };
   };
 
-  // Required user profile functions
+  func getFriendshipKey(user1 : Principal, user2 : Principal) : FriendshipKey {
+    if (user1 < user2) {
+      { user1; user2 };
+    } else {
+      { user1 = user2; user2 = user1 };
+    };
+  };
+
+  func getFriendship(user1 : Principal, user2 : Principal) : ?Friendship {
+    let key = getFriendshipKey(user1, user2);
+    friendships.get(key);
+  };
+
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can access profiles");
@@ -188,7 +201,6 @@ actor {
     };
   };
 
-  // User management (legacy compatibility)
   public shared ({ caller }) func register(displayName : Text) : async InternalUserProfile {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can register profiles");
@@ -235,7 +247,7 @@ actor {
 
   public query ({ caller }) func searchUsers(searchTerm : Text) : async [InternalUserProfile] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can search for other users");
+      return [];
     };
     let results = users.values().toList<InternalUserProfile>().filter(
       func(profile) {
@@ -245,21 +257,143 @@ actor {
     results.sort();
   };
 
-  // Messaging
+  public shared ({ caller }) func sendFriendRequest(other : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can send friend requests");
+    };
+    if (caller == other) {
+      Runtime.trap("Cannot send friend request to yourself");
+    };
+    let key = getFriendshipKey(caller, other);
+    switch (friendships.get(key)) {
+      case (?existing) {
+        if (existing.status == #blocked) {
+          Runtime.trap("Cannot send friend request: blocked");
+        };
+        Runtime.trap("Friend request already exists");
+      };
+      case (null) {
+        let friendship : Friendship = {
+          status = #pending;
+          initiatedBy = caller;
+          lastModified = Time.now();
+        };
+        friendships.add(key, friendship);
+      };
+    };
+  };
+
+  public shared ({ caller }) func acceptFriendRequest(other : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can accept friend requests");
+    };
+    let key = getFriendshipKey(caller, other);
+    switch (friendships.get(key)) {
+      case (?friendship) {
+        if (friendship.initiatedBy == caller) {
+          Runtime.trap("Cannot accept your own friend request");
+        };
+        if (friendship.status != #pending) {
+          Runtime.trap("Friend request is not pending");
+        };
+        let updated = {
+          friendship with
+          status = #accepted;
+          lastModified = Time.now();
+        };
+        friendships.add(key, updated);
+      };
+      case (null) {
+        Runtime.trap("Friend request not found");
+      };
+    };
+  };
+
+  public shared ({ caller }) func declineFriendRequest(other : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can decline friend requests");
+    };
+    let key = getFriendshipKey(caller, other);
+    switch (friendships.get(key)) {
+      case (?friendship) {
+        if (friendship.initiatedBy == caller) {
+          Runtime.trap("Cannot decline your own friend request");
+        };
+        if (friendship.status != #pending) {
+          Runtime.trap("Friend request is not pending");
+        };
+        let updated = {
+          friendship with
+          status = #declined;
+          lastModified = Time.now();
+        };
+        friendships.add(key, updated);
+      };
+      case (null) {
+        Runtime.trap("Friend request not found");
+      };
+    };
+  };
+
+  public shared ({ caller }) func blockUser(other : Principal) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can block users");
+    };
+    if (caller == other) {
+      Runtime.trap("Cannot block yourself");
+    };
+    let key = getFriendshipKey(caller, other);
+    let friendship : Friendship = {
+      status = #blocked;
+      initiatedBy = caller;
+      lastModified = Time.now();
+    };
+    friendships.add(key, friendship);
+  };
+
+  public query ({ caller }) func getFriends() : async [Principal] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return [];
+    };
+    friendships.entries().toList<(FriendshipKey, Friendship)>().filter(
+      func((key, friendship) : (FriendshipKey, Friendship)) : Bool {
+        friendship.status == #accepted and (key.user1 == caller or key.user2 == caller);
+      }
+    ).map<(FriendshipKey, Friendship), Principal>(
+        func((key, _) : (FriendshipKey, Friendship)) : Principal {
+          if (key.user1 == caller) { key.user2 } else { key.user1 };
+        }
+      ).toArray();
+  };
+
+  public query ({ caller }) func getPendingFriendRequests() : async [Principal] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return [];
+    };
+    friendships.entries().toList<(FriendshipKey, Friendship)>().filter(
+      func((key, friendship) : (FriendshipKey, Friendship)) : Bool {
+        friendship.status == #pending and friendship.initiatedBy != caller and (key.user1 == caller or key.user2 == caller);
+      }
+    ).map<(FriendshipKey, Friendship), Principal>(
+        func((key, friendship) : (FriendshipKey, Friendship)) : Principal {
+          if (key.user1 == caller) { key.user2 } else { key.user1 };
+        }
+      ).toArray();
+  };
+
   public shared ({ caller }) func startConversation(other : UserId) : async ConversationId {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can start conversations");
     };
-
-    if (not areFriends(caller, other)) {
-      Runtime.trap("Cannot start a conversation without a friendship");
+    if (caller == other) {
+      Runtime.trap("Cannot start a conversation with yourself");
     };
-
+    if (not areFriends(caller, other)) {
+      Runtime.trap("Can only start conversations with friends");
+    };
     let conversationId = makeConversationId(caller, other);
-
     let participants = (caller, other);
     let emptyLastSeen = Map.empty<UserId, Timestamp>();
-
     let conversation : Conversation = {
       id = conversationId;
       participants;
@@ -267,7 +401,6 @@ actor {
       lastSeen = emptyLastSeen;
       lastUpdate = Time.now();
     };
-
     conversations.add(conversationId, conversation);
     conversationId;
   };
@@ -276,14 +409,11 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can send messages");
     };
-
     switch (conversations.get(conversationId)) {
       case (?conversation) {
-        // Verify caller is a participant
         if (not isParticipant(caller, conversation.participants)) {
-          Runtime.trap("You are not a participant in this conversation");
+          Runtime.trap("Unauthorized: You are not a participant in this conversation");
         };
-
         let message : Message = {
           id = messageCounter;
           sender = caller;
@@ -292,7 +422,6 @@ actor {
           image;
         };
         messageCounter += 1;
-
         let updatedMessages = conversation.messages.concat([message]);
         let updatedConversation = {
           conversation with
@@ -300,7 +429,6 @@ actor {
           lastUpdate = Time.now();
         };
         conversations.add(conversationId, updatedConversation);
-
         message;
       };
       case (null) {
@@ -315,11 +443,9 @@ actor {
     };
     switch (conversations.get(conversationId)) {
       case (?conversation) {
-        // Verify caller is a participant
         if (not isParticipant(caller, conversation.participants)) {
-          Runtime.trap("You are not a participant in this conversation");
+          Runtime.trap("Unauthorized: You are not a participant in this conversation");
         };
-
         let updatedLastSeen = conversation.lastSeen.clone();
         updatedLastSeen.add(caller, Time.now());
         let updatedConversation = { conversation with lastSeen = updatedLastSeen };
@@ -333,9 +459,8 @@ actor {
 
   public query ({ caller }) func getConversations() : async [ConversationMetadata] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can retrieve their conversations");
+      return [];
     };
-
     conversations.values().toList<Conversation>().filter(
       func(convo) {
         isParticipant(caller, convo.participants);
@@ -358,14 +483,12 @@ actor {
 
   public query ({ caller }) func getMessages(conversationId : ConversationId) : async [Message] {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can retrieve messages");
+      Runtime.trap("Unauthorized: Only users can view messages");
     };
-
     switch (conversations.get(conversationId)) {
       case (?conversation) {
-        // Verify caller is a participant
         if (not isParticipant(caller, conversation.participants)) {
-          Runtime.trap("You are not a participant in this conversation");
+          Runtime.trap("Unauthorized: You are not a participant in this conversation");
         };
         conversation.messages;
       };
@@ -379,9 +502,7 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       return [];
     };
-
     let unread = Set.empty<ConversationId>();
-
     conversations.values().toList<Conversation>().forEach(
       func(convo) {
         if (isParticipant(caller, convo.participants)) {
@@ -415,7 +536,6 @@ actor {
     if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
       Runtime.trap("Unauthorized: Only users can delete conversations");
     };
-
     switch (conversations.get(conversationId)) {
       case (?conversation) {
         if (not isParticipant(caller, conversation.participants)) {
@@ -425,6 +545,160 @@ actor {
       };
       case (null) {
         Runtime.trap("Conversation not found or already deleted");
+      };
+    };
+  };
+
+  public shared ({ caller }) func startCall(callee : UserId, kind : CallKind, offer : Text) : async CallSession {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can start calls");
+    };
+    if (caller == callee) {
+      Runtime.trap("Cannot call yourself");
+    };
+    if (not areFriends(caller, callee)) {
+      Runtime.trap("Can only call friends");
+    };
+    let callId = caller.toText() # callee.toText() # Time.now().toText();
+    let session : CallSession = {
+      id = callId;
+      caller = caller;
+      callee = callee;
+      status = #initiated;
+      startTime = Time.now();
+      endTime = null;
+      kind;
+      offer = ?offer;
+      answer = null;
+      isActive = true;
+    };
+    calls.add(callId, session);
+    session;
+  };
+
+  public query ({ caller }) func getCallSession(callId : CallId) : async ?CallSession {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view call sessions");
+    };
+    switch (calls.get(callId)) {
+      case (?session) {
+        if (not isCallParticipant(caller, session)) {
+          Runtime.trap("Unauthorized: You are not a participant in this call");
+        };
+        ?session;
+      };
+      case (null) {
+        null;
+      };
+    };
+  };
+
+  public query ({ caller }) func getPendingIncomingCalls() : async [CallSession] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      return [];
+    };
+    calls.values().toList<CallSession>().filter(
+      func(session) {
+        session.callee == caller and session.caller != caller and session.isActive and (session.status == #initiated or session.status == #ringing);
+      }
+    ).toArray();
+  };
+
+  public shared ({ caller }) func answerCall(callId : CallId, answer : Text) : async CallSession {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can answer calls");
+    };
+    switch (calls.get(callId)) {
+      case (?session) {
+        if (caller != session.callee) {
+          Runtime.trap("Unauthorized: Only the callee can answer this call");
+        };
+        if (session.status != #initiated and session.status != #ringing) {
+          Runtime.trap("Call cannot be answered in current status");
+        };
+        let updatedSession = {
+          session with answer = ?answer;
+          status = #inProgress;
+        };
+        calls.add(callId, updatedSession);
+        updatedSession;
+      };
+      case (null) {
+        Runtime.trap("Call session not found");
+      };
+    };
+  };
+
+  public shared ({ caller }) func updateCallStatus(callId : CallId, newStatus : CallStatus) : async CallSession {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can update call status");
+    };
+    switch (calls.get(callId)) {
+      case (?session) {
+        if (not isCallParticipant(caller, session)) {
+          Runtime.trap("Unauthorized: You are not a participant in this call");
+        };
+
+        switch (newStatus) {
+          case (#ended) {
+            if (session.status != #inProgress and session.status != #ringing and session.status != #initiated) {
+              Runtime.trap("Call cannot be ended from current status");
+            };
+            let updatedSession = {
+              session with status = #ended;
+              endTime = ?Time.now();
+              isActive = false;
+            };
+            calls.add(callId, updatedSession);
+            updatedSession;
+          };
+          case (#missed) {
+            // Only the callee can mark a call as missed
+            if (caller != session.callee) {
+              Runtime.trap("Unauthorized: Only the callee can mark a call as missed");
+            };
+            if (session.status != #initiated and session.status != #ringing) {
+              Runtime.trap("Call cannot be marked as missed from current status");
+            };
+            let updatedSession = {
+              session with status = #missed;
+              endTime = ?Time.now();
+              isActive = false;
+            };
+            calls.add(callId, updatedSession);
+            updatedSession;
+          };
+          case (#ringing) {
+            // Only the caller can update to ringing status
+            if (caller != session.caller) {
+              Runtime.trap("Unauthorized: Only the caller can update call to ringing");
+            };
+            if (session.status != #initiated) {
+              Runtime.trap("Call can only be set to ringing from initiated status");
+            };
+            let updatedSession = { session with status = #ringing };
+            calls.add(callId, updatedSession);
+            updatedSession;
+          };
+          case (#inProgress) {
+            // Only the callee can move to inProgress (via answerCall is preferred)
+            if (caller != session.callee) {
+              Runtime.trap("Unauthorized: Only the callee can move call to inProgress");
+            };
+            if (session.status != #ringing and session.status != #initiated) {
+              Runtime.trap("Call cannot be moved to inProgress from current status");
+            };
+            let updatedSession = { session with status = #inProgress };
+            calls.add(callId, updatedSession);
+            updatedSession;
+          };
+          case (#initiated) {
+            Runtime.trap("Cannot transition back to initiated status");
+          };
+        };
+      };
+      case (null) {
+        Runtime.trap("Call session not found");
       };
     };
   };

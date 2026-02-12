@@ -1,57 +1,66 @@
 import Map "mo:core/Map";
-import Array "mo:core/Array";
 import Principal "mo:core/Principal";
-import Storage "blob-storage/Storage";
 
 module {
-  type OldMessage = {
-    id : Nat;
-    sender : Principal;
-    text : Text;
-    timestamp : Int;
+  type CallId = Text;
+  type UserId = Principal;
+  type Timestamp = Int;
+
+  type CallKind = {
+    #voice;
+    #video;
   };
 
-  type OldConversation = {
-    id : Text;
-    participants : (Principal, Principal);
-    messages : [OldMessage];
-    lastSeen : Map.Map<Principal, Int>;
-    lastUpdate : Int;
+  type CallStatus = {
+    #initiated;
+    #ringing;
+    #inProgress;
+    #ended;
+    #missed;
   };
 
-  type NewMessage = {
-    id : Nat;
-    sender : Principal;
-    text : Text;
-    timestamp : Int;
-    image : ?Storage.ExternalBlob;
+  type OldCallSession = {
+    id : CallId;
+    caller : UserId;
+    callee : UserId;
+    status : CallStatus;
+    startTime : Timestamp;
+    endTime : ?Timestamp;
+    kind : CallKind;
+    offer : ?Text;
+    answer : ?Text;
   };
 
-  type NewConversation = {
-    id : Text;
-    participants : (Principal, Principal);
-    messages : [NewMessage];
-    lastSeen : Map.Map<Principal, Int>;
-    lastUpdate : Int;
+  type NewCallSession = {
+    id : CallId;
+    caller : UserId;
+    callee : UserId;
+    status : CallStatus;
+    startTime : Timestamp;
+    endTime : ?Timestamp;
+    kind : CallKind;
+    offer : ?Text;
+    answer : ?Text;
+    isActive : Bool;
   };
 
   type OldActor = {
-    conversations : Map.Map<Text, OldConversation>;
+    calls : Map.Map<CallId, OldCallSession>;
   };
 
   type NewActor = {
-    conversations : Map.Map<Text, NewConversation>;
+    calls : Map.Map<CallId, NewCallSession>;
   };
 
   public func run(old : OldActor) : NewActor {
-    let newConversations = old.conversations.map<Text, OldConversation, NewConversation>(
-      func(_id, oldConversation) {
-        let newMessages = oldConversation.messages.map(
-          func(oldMsg) { { oldMsg with image = null } }
-        );
-        { oldConversation with messages = newMessages };
+    let newCalls = old.calls.map<CallId, OldCallSession, NewCallSession>(
+      func(_callId, oldSession) {
+        {
+          oldSession with
+          isActive = oldSession.status != #ended and oldSession.status != #missed;
+        };
       }
     );
-    { conversations = newConversations };
+    { calls = newCalls };
   };
 };

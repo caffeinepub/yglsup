@@ -1,13 +1,12 @@
 # Specification
 
 ## Summary
-**Goal:** Let users delete 1:1 conversations and stabilize the full call lifecycle so calling UI and media devices don’t get stuck or desync.
+**Goal:** Restore voice/video calling in production by fixing WebRTC signaling/SDP lifecycle, incoming call detection, and backend call status transitions, and by improving frontend error visibility for debugging.
 
 **Planned changes:**
-- Add an authenticated backend method to delete a conversation by ConversationId, only allowing participants, and ensure deleted conversations no longer appear in conversation lists and their messages can’t be fetched.
-- Add frontend conversation-list UI to delete a 1:1 chat with an English confirmation prompt, refresh the list after deletion, and clear the thread view if the deleted conversation was selected.
-- Audit and fix the end-to-end voice/video call lifecycle across backend and frontend (initiate, ringing/in-progress, minimize/restore, mute/unmute, end) to prevent runtime errors, stuck sessions, duplicated streams, and unreleased media tracks.
-- Improve call error handling for media permission/device failures and backend initiation failures with clear English UI states/toasts and correct reset of any loading/initiating state.
-- Ensure no new friend-request features, UI entry points, routes, or backend methods are introduced as part of these changes.
+- Fix outgoing call signaling so the RTCPeerConnection that creates the SDP offer is the same one that later applies the SDP answer, using the backend-stored offer/answer for the call session.
+- Implement/fix backend getPendingIncomingCalls() to reliably return only actionable incoming calls for the authenticated user (e.g., initiated/ringing where caller != callee).
+- Align backend call session lifecycle with the frontend flow by enforcing consistent status transitions for startCall, answerCall, and updateCallStatus, including participant-only access/mutation and protection against invalid transitions.
+- Improve frontend call failure visibility by surfacing English error messages for backend/signaling/permission failures and logging underlying errors to the console, without modifying immutable hook/UI paths.
 
-**User-visible outcome:** Users can delete a 1:1 chat from the conversation list (with confirmation) and calls (voice/video) start, minimize/restore, mute/unmute, and end reliably with clear English errors when something fails.
+**User-visible outcome:** From a 1:1 chat, users can place and receive voice calls that reliably ring, connect after acceptance, and end cleanly; if something fails (permissions or signaling/backend issues), the call UI shows a clear English error and developers can see details in console logs.

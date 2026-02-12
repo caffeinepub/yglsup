@@ -27,26 +27,30 @@ export default function ChatShell({ currentUser }: ChatShellProps) {
     }
   };
 
+  const handleBackToList = () => {
+    setSelectedConversationId(null);
+  };
+
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-[100dvh] overflow-hidden bg-gray-50 dark:bg-gray-950">
       {/* Left Panel - Conversation List */}
-      <div className="w-full md:w-96 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-white dark:bg-gray-900">
+      <div className={`w-full md:w-96 border-r border-gray-200 dark:border-gray-800 flex flex-col bg-white dark:bg-gray-900 ${selectedConversationId ? 'hidden md:flex' : 'flex'}`}>
         {/* Header */}
-        <div className="h-16 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 bg-gradient-to-r from-emerald-600 to-teal-600">
-          <div className="flex items-center space-x-3">
+        <div className="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-3 bg-gradient-to-r from-emerald-600 to-teal-600 shrink-0">
+          <div className="flex items-center space-x-2 min-w-0">
             <img 
               src="/assets/generated/yglsup-app-icon.dim_512x512.png" 
               alt="YGLSUP"
-              className="h-10 w-10 rounded-lg shadow-md"
+              className="h-8 w-8 rounded-lg shadow-md shrink-0"
             />
-            <h1 className="text-xl font-bold text-white">YGLSUP</h1>
+            <h1 className="text-lg font-bold text-white truncate">YGLSUP</h1>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 shrink-0">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowNewChat(true)}
-              className="text-white hover:bg-white/20"
+              className="text-white hover:bg-white/20 h-9 w-9"
             >
               <MessageSquarePlus className="h-5 w-5" />
             </Button>
@@ -64,11 +68,12 @@ export default function ChatShell({ currentUser }: ChatShellProps) {
       </div>
 
       {/* Right Panel - Message Thread */}
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col min-w-0 ${selectedConversationId ? 'flex' : 'hidden md:flex'}`}>
         {selectedConversationId ? (
           <MessageThread
             conversationId={selectedConversationId}
             currentUser={currentUser}
+            onBack={handleBackToList}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-gray-50 to-emerald-50/30 dark:from-gray-900 dark:to-emerald-950/30">

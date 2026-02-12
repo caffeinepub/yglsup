@@ -40,8 +40,8 @@ export default function ConversationList({
     return (
       <div className="flex-1 flex items-center justify-center p-4">
         <div className="text-center space-y-2">
-          <div className="h-6 w-6 animate-spin rounded-full border-4 border-emerald-600 border-t-transparent mx-auto" />
-          <p className="text-xs text-muted-foreground">Loading conversations...</p>
+          <div className="h-5 w-5 animate-spin rounded-full border-3 border-emerald-600 border-t-transparent mx-auto" />
+          <p className="text-xs text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -49,9 +49,9 @@ export default function ConversationList({
 
   if (conversations.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-6">
         <p className="text-sm text-muted-foreground text-center">
-          No conversations yet. Start a new chat to begin!
+          No conversations yet. Start a new chat!
         </p>
       </div>
     );
@@ -173,39 +173,39 @@ function ConversationItem({
     <>
       <div
         className={cn(
-          'w-full p-4 flex items-start gap-3 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group',
+          'w-full px-3 py-2.5 flex items-start gap-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group',
           isSelected && 'bg-emerald-50 dark:bg-emerald-950/30 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
         )}
       >
         <button
           onClick={onSelect}
-          className="flex-1 flex items-start gap-3 text-left min-w-0"
+          className="flex-1 flex items-start gap-2.5 text-left min-w-0"
         >
-          <Avatar className="h-12 w-12 shrink-0">
-            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-semibold">
+          <Avatar className="h-11 w-11 shrink-0">
+            <AvatarFallback className="bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-semibold text-sm">
               {otherUserInitials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between mb-1">
-              <p className={cn('text-sm font-semibold truncate', isUnread && 'text-emerald-700 dark:text-emerald-400')}>
+            <div className="flex items-center justify-between mb-0.5">
+              <p className={cn('text-[15px] font-medium truncate', isUnread && 'text-emerald-700 dark:text-emerald-400')}>
                 {otherUserDisplayName}
               </p>
-              <span className="text-xs text-muted-foreground shrink-0 ml-2">
+              <span className="text-[11px] text-muted-foreground shrink-0 ml-2">
                 {formatRelativeTime(lastUpdate)}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <p
                 className={cn(
-                  'text-sm truncate',
-                  isUnread ? 'font-medium text-gray-900 dark:text-gray-100' : 'text-muted-foreground'
+                  'text-[13px] truncate',
+                  isUnread ? 'font-normal text-gray-900 dark:text-gray-100' : 'text-muted-foreground'
                 )}
               >
                 {lastMessageText}
               </p>
               {isUnread && (
-                <Badge className="ml-2 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white">
+                <Badge className="ml-2 shrink-0 bg-emerald-600 hover:bg-emerald-600 text-white text-[10px] h-5 px-1.5">
                   New
                 </Badge>
               )}
@@ -216,7 +216,7 @@ function ConversationItem({
           variant="ghost"
           size="icon"
           onClick={handleDeleteClick}
-          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30"
+          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 h-8 w-8"
           title="Delete chat"
         >
           <Trash2 className="h-4 w-4" />

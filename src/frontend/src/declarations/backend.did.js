@@ -19,6 +19,29 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
+export const CallId = IDL.Text;
+export const Timestamp = IDL.Int;
+export const CallStatus = IDL.Variant({
+  'ringing' : IDL.Null,
+  'initiated' : IDL.Null,
+  'missed' : IDL.Null,
+  'ended' : IDL.Null,
+  'inProgress' : IDL.Null,
+});
+export const CallKind = IDL.Variant({ 'video' : IDL.Null, 'voice' : IDL.Null });
+export const UserId = IDL.Principal;
+export const CallSession = IDL.Record({
+  'id' : CallId,
+  'startTime' : Timestamp,
+  'status' : CallStatus,
+  'offer' : IDL.Opt(IDL.Text),
+  'endTime' : IDL.Opt(Timestamp),
+  'kind' : CallKind,
+  'answer' : IDL.Opt(IDL.Text),
+  'isActive' : IDL.Bool,
+  'callee' : UserId,
+  'caller' : UserId,
+});
 export const UserRole = IDL.Variant({
   'admin' : IDL.Null,
   'user' : IDL.Null,
@@ -26,8 +49,6 @@ export const UserRole = IDL.Variant({
 });
 export const ConversationId = IDL.Text;
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
-export const UserId = IDL.Principal;
-export const Timestamp = IDL.Int;
 export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const Message = IDL.Record({
   'id' : IDL.Nat,
@@ -74,13 +95,25 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'acceptFriendRequest' : IDL.Func([IDL.Principal], [], []),
+  'answerCall' : IDL.Func([CallId, IDL.Text], [CallSession], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'blockUser' : IDL.Func([IDL.Principal], [], []),
+  'declineFriendRequest' : IDL.Func([IDL.Principal], [], []),
   'deleteConversation' : IDL.Func([ConversationId], [], []),
+  'getCallSession' : IDL.Func([CallId], [IDL.Opt(CallSession)], ['query']),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
   'getConversations' : IDL.Func([], [IDL.Vec(ConversationMetadata)], ['query']),
   'getCurrentUser' : IDL.Func([], [IDL.Opt(InternalUserProfile)], ['query']),
+  'getFriends' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
   'getMessages' : IDL.Func([ConversationId], [IDL.Vec(Message)], ['query']),
+  'getPendingFriendRequests' : IDL.Func(
+      [],
+      [IDL.Vec(IDL.Principal)],
+      ['query'],
+    ),
+  'getPendingIncomingCalls' : IDL.Func([], [IDL.Vec(CallSession)], ['query']),
   'getUnreadConversations' : IDL.Func([], [IDL.Vec(ConversationId)], ['query']),
   'getUser' : IDL.Func(
       [IDL.Principal],
@@ -101,12 +134,15 @@ export const idlService = IDL.Service({
       [IDL.Vec(InternalUserProfile)],
       ['query'],
     ),
+  'sendFriendRequest' : IDL.Func([IDL.Principal], [], []),
   'sendMessage' : IDL.Func(
       [ConversationId, IDL.Text, IDL.Opt(ExternalBlob)],
       [Message],
       [],
     ),
+  'startCall' : IDL.Func([UserId, CallKind, IDL.Text], [CallSession], []),
   'startConversation' : IDL.Func([UserId], [ConversationId], []),
+  'updateCallStatus' : IDL.Func([CallId, CallStatus], [CallSession], []),
   'updateDisplayName' : IDL.Func([IDL.Text], [InternalUserProfile], []),
 });
 
@@ -124,6 +160,29 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
+  const CallId = IDL.Text;
+  const Timestamp = IDL.Int;
+  const CallStatus = IDL.Variant({
+    'ringing' : IDL.Null,
+    'initiated' : IDL.Null,
+    'missed' : IDL.Null,
+    'ended' : IDL.Null,
+    'inProgress' : IDL.Null,
+  });
+  const CallKind = IDL.Variant({ 'video' : IDL.Null, 'voice' : IDL.Null });
+  const UserId = IDL.Principal;
+  const CallSession = IDL.Record({
+    'id' : CallId,
+    'startTime' : Timestamp,
+    'status' : CallStatus,
+    'offer' : IDL.Opt(IDL.Text),
+    'endTime' : IDL.Opt(Timestamp),
+    'kind' : CallKind,
+    'answer' : IDL.Opt(IDL.Text),
+    'isActive' : IDL.Bool,
+    'callee' : UserId,
+    'caller' : UserId,
+  });
   const UserRole = IDL.Variant({
     'admin' : IDL.Null,
     'user' : IDL.Null,
@@ -131,8 +190,6 @@ export const idlFactory = ({ IDL }) => {
   });
   const ConversationId = IDL.Text;
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
-  const UserId = IDL.Principal;
-  const Timestamp = IDL.Int;
   const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Message = IDL.Record({
     'id' : IDL.Nat,
@@ -179,8 +236,13 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'acceptFriendRequest' : IDL.Func([IDL.Principal], [], []),
+    'answerCall' : IDL.Func([CallId, IDL.Text], [CallSession], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'blockUser' : IDL.Func([IDL.Principal], [], []),
+    'declineFriendRequest' : IDL.Func([IDL.Principal], [], []),
     'deleteConversation' : IDL.Func([ConversationId], [], []),
+    'getCallSession' : IDL.Func([CallId], [IDL.Opt(CallSession)], ['query']),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
     'getConversations' : IDL.Func(
@@ -189,7 +251,14 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'getCurrentUser' : IDL.Func([], [IDL.Opt(InternalUserProfile)], ['query']),
+    'getFriends' : IDL.Func([], [IDL.Vec(IDL.Principal)], ['query']),
     'getMessages' : IDL.Func([ConversationId], [IDL.Vec(Message)], ['query']),
+    'getPendingFriendRequests' : IDL.Func(
+        [],
+        [IDL.Vec(IDL.Principal)],
+        ['query'],
+      ),
+    'getPendingIncomingCalls' : IDL.Func([], [IDL.Vec(CallSession)], ['query']),
     'getUnreadConversations' : IDL.Func(
         [],
         [IDL.Vec(ConversationId)],
@@ -214,12 +283,15 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(InternalUserProfile)],
         ['query'],
       ),
+    'sendFriendRequest' : IDL.Func([IDL.Principal], [], []),
     'sendMessage' : IDL.Func(
         [ConversationId, IDL.Text, IDL.Opt(ExternalBlob)],
         [Message],
         [],
       ),
+    'startCall' : IDL.Func([UserId, CallKind, IDL.Text], [CallSession], []),
     'startConversation' : IDL.Func([UserId], [ConversationId], []),
+    'updateCallStatus' : IDL.Func([CallId, CallStatus], [CallSession], []),
     'updateDisplayName' : IDL.Func([IDL.Text], [InternalUserProfile], []),
   });
 };
